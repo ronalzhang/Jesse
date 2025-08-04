@@ -1,0 +1,61 @@
+{
+  "date": "2025-08-05",
+  "basic_stats": {
+    "total_trades": 1,
+    "winning_trades": 1,
+    "losing_trades": 0,
+    "win_rate": 1.0,
+    "total_pnl": "50",
+    "avg_pnl_per_trade": 50.0,
+    "max_profit": "50",
+    "max_loss": "50",
+    "avg_holding_time": 300.0,
+    "total_volume": 0
+  },
+  "profit_analysis": {
+    "profit_trend": "neutral",
+    "profit_consistency": 0,
+    "best_trading_hour": "4",
+    "worst_trading_hour": "4",
+    "profit_factor": 0
+  },
+  "risk_analysis": {
+    "risk_score": 0,
+    "max_drawdown": 0.0,
+    "sharpe_ratio": 0,
+    "pnl_volatility": NaN,
+    "risk_adjusted_return": 0
+  },
+  "strategy_analysis": {
+    "strategy_score": 0.5333333333333333,
+    "efficiency": 1,
+    "signal_quality": 0.6,
+    "adaptability": 0
+  },
+  "market_analysis": {
+    "market_volatility": 0.02,
+    "market_trend": "neutral",
+    "market_conditions": "stable"
+  },
+  "overall_score": 48.67,
+  "optimization_suggestions": [
+    "📈 收益一致性较差，建议优化风险控制参数",
+    "📊 夏普比率偏低，建议优化风险收益比",
+    "🌊 市场波动较小，建议增加套利策略"
+  ],
+  "target_achievement": {
+    "daily_target_min": 0.03,
+    "daily_target_max": 0.3,
+    "current_return": 0.005,
+    "achievement_level": "poor"
+  },
+  "strategy_evolution": {
+    "evolution_level": "major",
+    "parameter_adjustments": [],
+    "strategy_enhancements": [
+      "重新设计交易逻辑",
+      "调整策略参数",
+      "增加新的交易策略"
+    ]
+  }
+}

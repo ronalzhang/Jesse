@@ -7,7 +7,7 @@
 SERVER_IP="156.236.74.200"
 SERVER_PASS="Pr971V3j"
 PROJECT_DIR="/root/Jesse+"
-REPO_URL="git@github.com:ronalzhang/jesse.git"
+REPO_URL="https://github.com/ronalzhang/jesse.git"
 
 echo "🚀 部署高频量化交易系统到服务器..."
 

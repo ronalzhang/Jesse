@@ -23,9 +23,6 @@ import queue
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 导入数据连接器（不依赖Jesse框架）
-from .data_connector import get_data_connector
-
 # 设置页面配置
 st.set_page_config(
     page_title="Jesse+ AI增强量化交易系统",
@@ -205,7 +202,7 @@ class JessePlusWebInterface:
         # self.system_monitor = SystemMonitor()
         
         # 获取实时数据连接器
-        self.data_connector = get_data_connector()
+        # self.data_connector = get_data_connector()
         
         # 模拟数据生成器
         self.data_generator = DataGenerator()
@@ -433,13 +430,34 @@ class JessePlusWebInterface:
         
         # 获取价格数据
         try:
-            from data.multi_exchange_price_collector import get_price_collector
-            price_collector = get_price_collector()
+            # from data.multi_exchange_price_collector import get_price_collector
+            # price_collector = get_price_collector()
             
             if refresh_button or 'price_data' not in st.session_state:
                 with st.spinner("正在获取多交易所价格数据..."):
-                    price_data = price_collector.get_price_comparison_chart_data(selected_symbol)
-                    st.session_state.price_data = price_data
+                    # price_data = price_collector.get_price_comparison_chart_data(selected_symbol)
+                    # st.session_state.price_data = price_data
+                    # 模拟数据生成
+                    dates = pd.date_range(start='2024-01-01', periods=10, freq='H')
+                    prices = self.data_generator.generate_price_data(10)
+                    volumes = self.data_generator.generate_volume_data(10)
+                    exchanges = ["Binance", "OKX", "Bybit", "Gate.io"]
+                    last_prices = prices
+                    bid_prices = [p * 0.999 for p in prices]
+                    ask_prices = [p * 1.001 for p in prices]
+                    high_prices = [p * 1.005 for p in prices]
+                    low_prices = [p * 0.995 for p in prices]
+                    volumes_data = volumes
+                    
+                    st.session_state.price_data = {
+                        'exchanges': exchanges,
+                        'last_prices': last_prices,
+                        'bid_prices': bid_prices,
+                        'ask_prices': ask_prices,
+                        'high_prices': high_prices,
+                        'low_prices': low_prices,
+                        'volumes': volumes_data
+                    }
             
             price_data = st.session_state.get('price_data', {})
             

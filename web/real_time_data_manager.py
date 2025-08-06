@@ -41,10 +41,11 @@ class RealTimeDataManager:
         self.exchanges = {}
         self._init_exchanges()
         
-        # 启动数据更新线程
+        # 数据线程状态（默认不启动）
         self.is_running = False
         self.data_queue = queue.Queue()
-        self.start_data_thread()
+        # 注释掉自动启动数据线程，避免WebSocket冲突
+        # self.start_data_thread()
     
     def _init_exchanges(self):
         """初始化交易所连接"""

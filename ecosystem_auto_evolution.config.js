@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'jesse-auto-evolution',
       script: 'start_auto_evolution_system.py',
-      interpreter: 'python3',
+      interpreter: '/root/Jesse+/jesse_venv/bin/python',
       cwd: '/root/Jesse+',
       instances: 1,
       autorestart: true,
@@ -11,7 +11,8 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 8060
+        PORT: 8060,
+        PYTHONPATH: '/root/Jesse+'
       },
       error_file: './logs/auto_evolution_error.log',
       out_file: './logs/auto_evolution_out.log',
@@ -29,14 +30,15 @@ module.exports = {
     {
       name: 'jesse-trading-system',
       script: 'run_high_frequency_trading.py',
-      interpreter: 'python3',
+      interpreter: '/root/Jesse+/jesse_venv/bin/python',
       cwd: '/root/Jesse+',
       instances: 1,
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        PYTHONPATH: '/root/Jesse+'
       },
       error_file: './logs/trading_error.log',
       out_file: './logs/trading_out.log',

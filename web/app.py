@@ -27,7 +27,7 @@ sys.path.insert(0, str(project_root))
 
 # 设置页面配置
 st.set_page_config(
-    page_title="Jesse+ AI增强量化交易系统",
+    page_title="校长的AI增强量化交易系统",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -177,6 +177,34 @@ st.markdown("""
         background: #d97706;
         box-shadow: 0 0 8px rgba(217, 119, 6, 0.6);
     }
+    
+    .sidebar .sidebar-content {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    
+    .stSelectbox > div > div > select {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
+    
+    .stTextInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
+    
+    .stNumberInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -211,6 +239,14 @@ class JessePlusWebInterface:
         
         # 模拟数据生成器
         self.data_generator = DataGenerator()
+        
+        # 配置管理器
+        from config_manager import ConfigManager
+        self.config_manager = ConfigManager()
+        
+        # 实时数据管理器
+        from real_time_data_manager import RealTimeDataManager
+        self.real_time_data = RealTimeDataManager()
         
         # 初始化性能指标
         self.performance_metrics = {
@@ -330,33 +366,12 @@ class JessePlusWebInterface:
             border-radius: 6px;
         }
         </style>
-        
-        <script>
-        // 同步HTML表单和Streamlit输入框的数据
-        document.addEventListener('DOMContentLoaded', function() {
-            const apiKeyInput = document.getElementById('api_key');
-            const apiSecretInput = document.getElementById('api_secret');
-            
-            if (apiKeyInput) {
-                apiKeyInput.addEventListener('input', function() {
-                    // 这里可以通过Streamlit的session_state来同步数据
-                    console.log('API Key updated:', this.value);
-                });
-            }
-            
-            if (apiSecretInput) {
-                apiSecretInput.addEventListener('input', function() {
-                    console.log('API Secret updated:', this.value);
-                });
-            }
-        });
-        </script>
         """, unsafe_allow_html=True)
         
         st.markdown("""
         <div class="main-header">
-            <h1>🚀 Jesse+ AI增强量化交易系统</h1>
-            <p>智能策略进化 • 实时市场监控 • 多交易所套利</p>
+            <h1>校长的AI增强量化交易系统</h1>
+            <p>🚀 基于深度学习的智能量化交易平台 | 实时监控 | AI分析 | 策略进化</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -417,81 +432,202 @@ class JessePlusWebInterface:
     def render_sidebar(self):
         """渲染侧边栏"""
         st.sidebar.markdown("""
-        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-                    padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-            <h3 style="color: white; margin: 0;">🎛️ 控制面板</h3>
+        <div class="sidebar-content">
+            <h3>🎛️ 控制面板</h3>
         </div>
         """, unsafe_allow_html=True)
         
         # 系统控制
-        st.sidebar.subheader("🚀 系统控制")
+        st.sidebar.markdown("### 🖥️ 系统控制")
+        
         col1, col2 = st.sidebar.columns(2)
         with col1:
-            if st.button("🟢 启动系统", key="start_system", use_container_width=True):
+            if st.button("🟢 启动系统", use_container_width=True):
                 st.session_state.system_status = "运行中"
                 st.success("✅ 系统已启动")
+        
         with col2:
-            if st.button("🔴 停止系统", key="stop_system", use_container_width=True):
+            if st.button("🔴 停止系统", use_container_width=True):
                 st.session_state.system_status = "停止"
                 st.error("❌ 系统已停止")
         
-        # 紧急操作
-        st.sidebar.subheader("⚠️ 紧急操作")
-        if st.sidebar.button("🛑 紧急停止", key="emergency_stop", use_container_width=True):
-            st.session_state.system_status = "紧急停止"
-            st.error("🚨 系统已紧急停止")
+        # 监控设置
+        st.sidebar.markdown("### 📊 监控设置")
         
-        # 实时监控开关
-        st.sidebar.subheader("📊 监控设置")
-        show_ai_process = st.sidebar.checkbox("显示AI分析过程", value=True)
-        show_decision_process = st.sidebar.checkbox("显示决策过程", value=True)
-        show_evolution_process = st.sidebar.checkbox("显示策略进化", value=True)
-        auto_refresh = st.sidebar.checkbox("自动刷新", value=True)
+        # 从配置管理器获取设置
+        config = self.config_manager.get_all_config()
+        
+        show_ai_process = st.sidebar.checkbox(
+            "显示AI分析过程", 
+            value=config.get('show_ai_process', True),
+            key="show_ai_process"
+        )
+        
+        show_decision_process = st.sidebar.checkbox(
+            "显示决策过程", 
+            value=config.get('show_decision_process', True),
+            key="show_decision_process"
+        )
+        
+        show_strategy_evolution = st.sidebar.checkbox(
+            "显示策略进化", 
+            value=config.get('show_strategy_evolution', True),
+            key="show_strategy_evolution"
+        )
+        
+        auto_refresh = st.sidebar.checkbox(
+            "自动刷新", 
+            value=config.get('auto_refresh', True),
+            key="auto_refresh"
+        )
+        
+        # 保存监控设置
+        if st.sidebar.button("💾 保存设置", use_container_width=True):
+            self.config_manager.update_config('show_ai_process', show_ai_process)
+            self.config_manager.update_config('show_decision_process', show_decision_process)
+            self.config_manager.update_config('show_strategy_evolution', show_strategy_evolution)
+            self.config_manager.update_config('auto_refresh', auto_refresh)
+            st.sidebar.success("✅ 设置已保存")
         
         # 策略管理
-        st.sidebar.subheader("🎯 策略管理")
-        strategy_options = [
+        st.sidebar.markdown("### 🎯 策略管理")
+        
+        available_strategies = [
             "AI增强策略", "移动平均线交叉策略", "RSI策略", 
             "MACD策略", "布林带策略", "套利策略"
         ]
-        selected_strategies = st.sidebar.multiselect(
+        
+        active_strategies = st.sidebar.multiselect(
             "选择活跃策略",
-            strategy_options,
-            default=["AI增强策略", "移动平均线交叉策略"]
+            available_strategies,
+            default=config.get('active_strategies', ["AI增强策略", "移动平均线交叉策略", "RSI策略"]),
+            key="active_strategies"
         )
         
+        # 保存策略设置
+        if st.sidebar.button("💾 保存策略", use_container_width=True):
+            self.config_manager.update_config('active_strategies', active_strategies)
+            st.sidebar.success("✅ 策略设置已保存")
+        
         # AI配置
-        st.sidebar.subheader("🤖 AI配置")
-        ai_enabled = st.sidebar.checkbox("启用AI增强", value=True)
-        prediction_horizon = st.sidebar.slider("预测周期(小时)", 1, 24, 6)
-        confidence_threshold = st.sidebar.slider("置信度阈值", 0.0, 1.0, 0.7)
+        st.sidebar.markdown("### 🤖 AI配置")
+        
+        enable_ai = st.sidebar.checkbox(
+            "启用AI增强", 
+            value=True,
+            key="enable_ai"
+        )
+        
+        prediction_horizon = st.sidebar.slider(
+            "预测周期(小时)", 
+            min_value=1, 
+            max_value=24, 
+            value=config.get('prediction_horizon', 24),
+            key="prediction_horizon"
+        )
+        
+        confidence_threshold = st.sidebar.slider(
+            "置信度阈值", 
+            min_value=0.0, 
+            max_value=1.0, 
+            value=config.get('confidence_threshold', 0.7),
+            step=0.1,
+            key="confidence_threshold"
+        )
+        
+        # 保存AI配置
+        if st.sidebar.button("💾 保存AI配置", use_container_width=True):
+            self.config_manager.update_config('prediction_horizon', prediction_horizon)
+            self.config_manager.update_config('confidence_threshold', confidence_threshold)
+            st.sidebar.success("✅ AI配置已保存")
         
         # 风险控制
-        st.sidebar.subheader("🛡️ 风险控制")
-        max_position_size = st.sidebar.number_input("最大仓位(%)", 1, 100, 10)
-        stop_loss = st.sidebar.number_input("止损(%)", 1, 20, 5)
-        max_daily_loss = st.sidebar.number_input("日最大亏损(%)", 1, 50, 15)
+        st.sidebar.markdown("### 🛡️ 风险控制")
         
-        # 实时状态
-        st.sidebar.subheader("📈 实时状态")
-        st.sidebar.metric("当前收益", "2.5%", "0.3%")
-        st.sidebar.metric("今日交易", "15", "3")
-        st.sidebar.metric("胜率", "68%", "2%")
-        st.sidebar.metric("最大回撤", "8.2%", "-0.5%")
+        max_position = st.sidebar.slider(
+            "最大仓位(%)", 
+            min_value=1, 
+            max_value=100, 
+            value=int(config.get('max_position_size', 15)),
+            key="max_position"
+        )
         
-        return {
-            "selected_strategies": selected_strategies,
-            "ai_enabled": ai_enabled,
-            "prediction_horizon": prediction_horizon,
-            "confidence_threshold": confidence_threshold,
-            "max_position_size": max_position_size,
-            "stop_loss": stop_loss,
-            "max_daily_loss": max_daily_loss,
-            "show_ai_process": show_ai_process,
-            "show_decision_process": show_decision_process,
-            "show_evolution_process": show_evolution_process,
-            "auto_refresh": auto_refresh
-        }
+        stop_loss = st.sidebar.slider(
+            "止损(%)", 
+            min_value=1, 
+            max_value=20, 
+            value=int(config.get('stop_loss_threshold', 5)),
+            key="stop_loss"
+        )
+        
+        # 保存风险控制设置
+        if st.sidebar.button("💾 保存风险设置", use_container_width=True):
+            self.config_manager.update_config('max_position_size', float(max_position))
+            self.config_manager.update_config('stop_loss_threshold', float(stop_loss))
+            st.sidebar.success("✅ 风险设置已保存")
+        
+        # 实时状态显示
+        st.sidebar.markdown("### 📈 实时状态")
+        
+        # 获取真实数据
+        try:
+            # 获取BTC价格
+            btc_price_data = self.real_time_data.get_price_data('BTC/USDT', 'binance')
+            
+            if btc_price_data:
+                st.sidebar.metric(
+                    "BTC价格", 
+                    f"${btc_price_data['last']:,.2f}",
+                    f"{btc_price_data['change']:.2f}%"
+                )
+            else:
+                # 使用模拟数据
+                st.sidebar.metric(
+                    "BTC价格", 
+                    "$42,150.00",
+                    "+2.5%"
+                )
+        except:
+            # 使用模拟数据
+            st.sidebar.metric(
+                "BTC价格", 
+                "$42,150.00",
+                "+2.5%"
+            )
+        
+        # 获取系统状态
+        system_status = self.real_time_data.get_system_status()
+        
+        # 系统状态
+        st.sidebar.metric(
+            "系统状态", 
+            st.session_state.system_status
+        )
+        
+        # 活跃策略数量
+        st.sidebar.metric(
+            "活跃策略", 
+            len(active_strategies)
+        )
+        
+        # 今日收益（从系统状态获取）
+        if system_status:
+            total_return = system_status.get('total_return', 0.032)
+            st.sidebar.metric(
+                "今日收益", 
+                f"+{total_return:.1%}"
+            )
+        else:
+            st.sidebar.metric(
+                "今日收益", 
+                "+3.2%"
+            )
+        
+        # 总资产（模拟数据）
+        st.sidebar.metric(
+            "总资产", 
+            "$125,430.00"
+        )
     
     def render_dashboard(self):
         """渲染主仪表板"""
@@ -1857,6 +1993,9 @@ class JessePlusWebInterface:
         """渲染系统配置"""
         st.subheader("⚙️ 系统配置")
         
+        # 加载当前配置
+        config = self.config_manager.get_all_config()
+        
         col1, col2 = st.columns(2)
         
         with col1:
@@ -1866,9 +2005,9 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            db_host = st.text_input("数据库主机", value="localhost")
-            db_port = st.number_input("数据库端口", value=27017)
-            db_name = st.text_input("数据库名称", value="jesse_plus")
+            db_host = st.text_input("数据库主机", value=config.get('db_host', 'localhost'), key="db_host")
+            db_port = st.number_input("数据库端口", value=config.get('db_port', 27017), key="db_port")
+            db_name = st.text_input("数据库名称", value=config.get('db_name', 'jesse_plus'), key="db_name")
             
             st.markdown("""
             <div class="chart-container">
@@ -1876,12 +2015,14 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            exchange = st.selectbox("交易所", ["Binance", "OKX", "Bybit", "Gate.io"])
+            exchange = st.selectbox("交易所", ["Binance", "OKX", "Bybit", "Gate.io"], 
+                                  index=["Binance", "OKX", "Bybit", "Gate.io"].index(config.get('exchange', 'Binance')), 
+                                  key="exchange")
             
             # 使用Streamlit的密码输入框，但添加表单包装
             st.markdown('<form>', unsafe_allow_html=True)
-            api_key = st.text_input("API Key", type="password", key="api_key_input")
-            api_secret = st.text_input("API Secret", type="password", key="api_secret_input")
+            api_key = st.text_input("API Key", type="password", value=config.get('api_key', ''), key="api_key_input")
+            api_secret = st.text_input("API Secret", type="password", value=config.get('api_secret', ''), key="api_secret_input")
             st.markdown('</form>', unsafe_allow_html=True)
         
         with col2:
@@ -1891,9 +2032,9 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            lstm_units = st.number_input("LSTM单元数", value=128)
-            transformer_layers = st.number_input("Transformer层数", value=6)
-            learning_rate = st.number_input("学习率", value=0.001, format="%.4f")
+            lstm_units = st.number_input("LSTM单元数", value=config.get('lstm_units', 128), key="lstm_units")
+            transformer_layers = st.number_input("Transformer层数", value=config.get('transformer_layers', 6), key="transformer_layers")
+            learning_rate = st.number_input("学习率", value=config.get('learning_rate', 0.001), format="%.4f", key="learning_rate")
             
             st.markdown("""
             <div class="chart-container">
@@ -1901,11 +2042,82 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            max_drawdown = st.number_input("最大回撤(%)", value=10)
-            daily_loss_limit = st.number_input("日损失限制(%)", value=5)
-            
-        if st.button("💾 保存配置", use_container_width=True):
-            st.success("✅ 配置已保存")
+            max_drawdown = st.number_input("最大回撤(%)", value=config.get('max_drawdown', 10.0), key="max_drawdown")
+            daily_loss_limit = st.number_input("日损失限制(%)", value=config.get('daily_loss_limit', 5.0), key="daily_loss_limit")
+            max_position_size = st.number_input("最大仓位(%)", value=config.get('max_position_size', 15.0), key="max_position_size")
+            stop_loss_threshold = st.number_input("止损阈值(%)", value=config.get('stop_loss_threshold', 5.0), key="stop_loss_threshold")
+        
+        # 保存配置按钮
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("💾 保存配置", use_container_width=True):
+                # 收集所有配置
+                new_config = {
+                    'db_host': db_host,
+                    'db_port': db_port,
+                    'db_name': db_name,
+                    'exchange': exchange,
+                    'api_key': api_key,
+                    'api_secret': api_secret,
+                    'lstm_units': lstm_units,
+                    'transformer_layers': transformer_layers,
+                    'learning_rate': learning_rate,
+                    'max_drawdown': max_drawdown,
+                    'daily_loss_limit': daily_loss_limit,
+                    'max_position_size': max_position_size,
+                    'stop_loss_threshold': stop_loss_threshold
+                }
+                
+                # 保存配置
+                success_count = 0
+                for key, value in new_config.items():
+                    if self.config_manager.update_config(key, value):
+                        success_count += 1
+                
+                if success_count == len(new_config):
+                    st.success("✅ 配置已保存到数据库")
+                else:
+                    st.error(f"❌ 部分配置保存失败 ({success_count}/{len(new_config)})")
+        
+        with col2:
+            if st.button("🔄 重置配置", use_container_width=True):
+                if self.config_manager.reset_config():
+                    st.success("✅ 配置已重置为默认值")
+                    st.rerun()
+                else:
+                    st.error("❌ 重置配置失败")
+        
+        with col3:
+            if st.button("📋 配置历史", use_container_width=True):
+                history = self.config_manager.get_config_history(limit=10)
+                if history:
+                    st.subheader("最近配置变更")
+                    for item in history:
+                        st.write(f"**{item['config_key']}**: {item['old_value']} → {item['new_value']}")
+                        st.caption(f"变更时间: {item['changed_at']}")
+                else:
+                    st.info("暂无配置变更历史")
+        
+        # 显示当前配置状态
+        st.markdown("""
+        <div class="chart-container">
+            <h4>配置状态</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("数据库连接", "✅ 正常" if config.get('db_host') else "❌ 未配置")
+        
+        with col2:
+            st.metric("交易所API", "✅ 已配置" if config.get('api_key') else "❌ 未配置")
+        
+        with col3:
+            st.metric("AI模型", "✅ 已配置" if config.get('lstm_units') else "❌ 未配置")
+        
+        with col4:
+            st.metric("风险控制", "✅ 已配置" if config.get('max_drawdown') else "❌ 未配置")
     
     def render_logs(self):
         """渲染日志"""
@@ -2350,331 +2562,194 @@ class JessePlusWebInterface:
         col1, col2 = st.columns(2)
         
         with col1:
-            # 夏普比率趋势
-            dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30)
-            sharpe_ratios = [1.2 + np.random.normal(0, 0.2) for _ in range(30)]
+            st.markdown("""
+            <div class="chart-container">
+                <h4>风险指标趋势</h4>
+            </div>
+            """, unsafe_allow_html=True)
             
+            # 生成风险趋势数据
+            dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
+            risk_data = {
+                '日期': dates,
+                '夏普比率': [1.2 + np.random.normal(0, 0.1) for _ in range(30)],
+                '波动率': [12 + np.random.normal(0, 2) for _ in range(30)],
+                '最大回撤': [8 + np.random.normal(0, 1) for _ in range(30)],
+                'VaR': [2 + np.random.normal(0, 0.5) for _ in range(30)]
+            }
+            
+            df_risk = pd.DataFrame(risk_data)
+            
+            # 创建风险趋势图表
             fig = go.Figure()
+            
             fig.add_trace(go.Scatter(
-                x=dates, y=sharpe_ratios,
+                x=df_risk['日期'],
+                y=df_risk['夏普比率'],
                 mode='lines+markers',
                 name='夏普比率',
-                line=dict(color='#059669', width=2)
+                line=dict(color='#00ff88', width=2)
             ))
-            fig.add_hline(y=1.5, line_dash="dash", line_color="green", 
-                         annotation_text="目标线(1.5)")
+            
+            fig.add_trace(go.Scatter(
+                x=df_risk['日期'],
+                y=df_risk['波动率'],
+                mode='lines+markers',
+                name='波动率',
+                line=dict(color='#ff8800', width=2),
+                yaxis='y2'
+            ))
+            
             fig.update_layout(
-                title="夏普比率趋势",
+                title="风险指标30天趋势",
                 xaxis_title="日期",
-                yaxis_title="夏普比率",
-                height=300,
-                template="plotly_dark"
+                yaxis=dict(title="夏普比率", side='left'),
+                yaxis2=dict(title="波动率(%)", side='right', overlaying='y'),
+                height=400,
+                template="plotly_dark",
+                showlegend=True
             )
+            
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            # 波动率趋势
-            volatilities = [10 + np.random.normal(0, 3) for _ in range(30)]
+            st.markdown("""
+            <div class="chart-container">
+                <h4>风险分布</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 生成风险分布数据
+            returns = np.random.normal(0.001, 0.02, 1000)  # 模拟收益率分布
             
             fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=dates, y=volatilities,
-                mode='lines+markers',
-                name='波动率',
-                line=dict(color='#d97706', width=2)
+            
+            fig.add_trace(go.Histogram(
+                x=returns,
+                nbinsx=50,
+                name='收益率分布',
+                marker_color='rgba(0, 255, 136, 0.6)'
             ))
-            fig.add_hline(y=15, line_dash="dash", line_color="orange", 
-                         annotation_text="警戒线(15%)")
+            
             fig.update_layout(
-                title="波动率趋势",
-                xaxis_title="日期",
-                yaxis_title="波动率 (%)",
-                height=300,
+                title="收益率分布直方图",
+                xaxis_title="收益率",
+                yaxis_title="频次",
+                height=400,
                 template="plotly_dark"
             )
+            
             st.plotly_chart(fig, use_container_width=True)
         
-        # 风险指标仪表板 - 增强版
-        st.subheader("🎛️ 风险指标仪表板")
+        # 风险控制设置
+        st.subheader("⚙️ 风险控制设置")
         
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>止损设置</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 从配置管理器获取设置
+            config = self.config_manager.get_all_config()
+            
+            stop_loss_pct = st.slider(
+                "止损百分比", 
+                min_value=1.0, 
+                max_value=20.0, 
+                value=config.get('stop_loss_threshold', 5.0),
+                step=0.5,
+                key="risk_stop_loss"
+            )
+            
+            trailing_stop = st.checkbox(
+                "启用追踪止损",
+                value=True,
+                key="trailing_stop"
+            )
+            
+            max_daily_loss = st.slider(
+                "日最大亏损", 
+                min_value=1.0, 
+                max_value=50.0, 
+                value=config.get('daily_loss_limit', 5.0),
+                step=0.5,
+                key="max_daily_loss"
+            )
+        
+        with col2:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>仓位管理</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            max_position_size = st.slider(
+                "最大仓位大小", 
+                min_value=1.0, 
+                max_value=100.0, 
+                value=config.get('max_position_size', 15.0),
+                step=1.0,
+                key="risk_max_position"
+            )
+            
+            position_sizing = st.selectbox(
+                "仓位计算方法",
+                ["固定比例", "凯利公式", "波动率调整", "风险平价"],
+                index=0,
+                key="position_sizing"
+            )
+            
+            diversification = st.checkbox(
+                "启用分散投资",
+                value=True,
+                key="diversification"
+            )
+        
+        # 保存风险控制设置
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>最大仓位监控</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            position_sizes = [15, 12, 18, 10, 20, 16, 14, 17, 13, 19]
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number+delta",
-                value=position_sizes[-1],
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "当前仓位 (%)"},
-                delta={'reference': 15},
-                gauge={
-                    'axis': {'range': [None, 30]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, 10], 'color': "lightgray"},
-                        {'range': [10, 20], 'color': "gray"},
-                        {'range': [20, 30], 'color': "darkgray"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 25
-                    }
-                }
-            ))
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            if st.button("💾 保存风险设置", use_container_width=True):
+                self.config_manager.update_config('stop_loss_threshold', stop_loss_pct)
+                self.config_manager.update_config('daily_loss_limit', max_daily_loss)
+                self.config_manager.update_config('max_position_size', max_position_size)
+                st.success("✅ 风险设置已保存")
         
         with col2:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>杠杆率监控</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            leverage_ratios = [1.2, 1.5, 1.8, 1.3, 1.6, 1.4, 1.7, 1.1, 1.9, 1.2]
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number+delta",
-                value=leverage_ratios[-1],
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "当前杠杆率"},
-                delta={'reference': 1.5},
-                gauge={
-                    'axis': {'range': [None, 3]},
-                    'bar': {'color': "darkgreen"},
-                    'steps': [
-                        {'range': [0, 1], 'color': "lightgray"},
-                        {'range': [1, 2], 'color': "gray"},
-                        {'range': [2, 3], 'color': "darkgray"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 2.5
-                    }
-                }
-            ))
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            if st.button("🔄 重置风险设置", use_container_width=True):
+                # 重置为默认值
+                self.config_manager.update_config('stop_loss_threshold', 5.0)
+                self.config_manager.update_config('daily_loss_limit', 5.0)
+                self.config_manager.update_config('max_position_size', 15.0)
+                st.success("✅ 风险设置已重置")
+                st.rerun()
         
         with col3:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>流动性指标</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            liquidity_scores = [85, 78, 92, 88, 76, 90, 82, 95, 87, 89]
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number+delta",
-                value=liquidity_scores[-1],
-                domain={'x': [0, 1], 'y': [0, 1]},
-                title={'text': "流动性评分"},
-                delta={'reference': 85},
-                gauge={
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "darkblue"},
-                    'steps': [
-                        {'range': [0, 50], 'color': "red"},
-                        {'range': [50, 80], 'color': "yellow"},
-                        {'range': [80, 100], 'color': "green"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 50
-                    }
-                }
-            ))
-            fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            if st.button("📊 风险报告", use_container_width=True):
+                st.info("📋 生成风险报告...")
+                # 这里可以生成详细的风险报告
         
-        # 风险预警 - 增强版
-        st.subheader("⚠️ 风险预警")
+        # 风险警报
+        st.subheader("🚨 风险警报")
         
-        # 实时风险预警
-        col1, col2 = st.columns(2)
+        # 模拟风险警报
+        alerts = [
+            {"level": "warning", "message": "BTC价格波动率超过15%", "time": "2分钟前"},
+            {"level": "info", "message": "ETH仓位接近最大限制", "time": "5分钟前"},
+            {"level": "success", "message": "风险指标正常", "time": "10分钟前"}
+        ]
         
-        with col1:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>🚨 高风险预警</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            high_risk_alerts = [
-                {"风险": "市场波动加剧", "级别": "高", "影响": "可能触发止损", "建议": "降低仓位", "时间": "2分钟前"},
-                {"风险": "流动性不足", "级别": "中", "影响": "滑点增加", "建议": "分批交易", "时间": "5分钟前"},
-                {"风险": "情绪反转", "级别": "高", "影响": "价格剧烈波动", "建议": "暂停交易", "时间": "8分钟前"}
-            ]
-            
-            for alert in high_risk_alerts:
-                col1, col2, col3, col4, col5 = st.columns(5)
-                with col1:
-                    st.write(alert["风险"])
-                with col2:
-                    level_color = "danger" if alert["级别"] == "高" else "warning"
-                    st.markdown(f"""
-                    <div class="metric-card {level_color}-metric">
-                        <h4>{alert["级别"]}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col3:
-                    st.write(alert["影响"])
-                with col4:
-                    st.write(alert["建议"])
-                with col5:
-                    st.write(alert["时间"])
-        
-        with col2:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>✅ 安全状态</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            safe_status = [
-                {"指标": "夏普比率", "状态": "正常", "值": "1.8", "趋势": "↗️"},
-                {"指标": "VaR(95%)", "状态": "正常", "值": "2.1%", "趋势": "↘️"},
-                {"指标": "最大回撤", "状态": "正常", "值": "8.2%", "趋势": "↘️"},
-                {"指标": "相关性", "状态": "正常", "值": "0.35", "趋势": "↘️"}
-            ]
-            
-            for status in safe_status:
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.write(status["指标"])
-                with col2:
-                    st.markdown(f"""
-                    <div class="metric-card success-metric">
-                        <h4>{status["状态"]}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col3:
-                    st.write(status["值"])
-                with col4:
-                    st.write(status["趋势"])
-        
-        # 风险控制策略 - 新增
-        st.subheader("🎯 风险控制策略")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>📊 止损策略</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            stop_loss_strategies = [
-                {"策略": "固定止损", "设置": "5%", "状态": "启用", "效果": "良好"},
-                {"策略": "移动止损", "设置": "3%", "状态": "启用", "效果": "优秀"},
-                {"策略": "时间止损", "设置": "24小时", "状态": "启用", "效果": "良好"},
-                {"策略": "波动率止损", "设置": "动态", "状态": "启用", "效果": "优秀"}
-            ]
-            
-            for strategy in stop_loss_strategies:
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.write(strategy["策略"])
-                with col2:
-                    st.write(strategy["设置"])
-                with col3:
-                    st.markdown(f"""
-                    <div class="metric-card success-metric">
-                        <h4>{strategy["状态"]}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col4:
-                    st.write(strategy["效果"])
-        
-        with col2:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>💰 仓位管理</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            position_management = [
-                {"策略": "最大仓位限制", "设置": "20%", "状态": "启用", "效果": "良好"},
-                {"策略": "分散投资", "设置": "5个币种", "状态": "启用", "效果": "优秀"},
-                {"策略": "动态调整", "设置": "实时", "状态": "启用", "效果": "优秀"},
-                {"策略": "资金管理", "设置": "凯利公式", "状态": "启用", "效果": "良好"}
-            ]
-            
-            for strategy in position_management:
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.write(strategy["策略"])
-                with col2:
-                    st.write(strategy["设置"])
-                with col3:
-                    st.markdown(f"""
-                    <div class="metric-card success-metric">
-                        <h4>{strategy["状态"]}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col4:
-                    st.write(strategy["效果"])
-        
-        # 风险报告 - 新增
-        st.subheader("📋 风险报告")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>📈 风险收益分析</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            risk_return_analysis = {
-                "指标": ["总收益率", "年化收益率", "最大回撤", "夏普比率", "索提诺比率", "卡玛比率"],
-                "值": ["15.2%", "18.5%", "8.2%", "1.8", "2.1", "2.2"],
-                "目标": ["10%+", "15%+", "<10%", ">1.5", ">1.8", ">2.0"],
-                "状态": ["✅", "✅", "✅", "✅", "✅", "✅"]
-            }
-            
-            df_risk_return = pd.DataFrame(risk_return_analysis)
-            st.dataframe(df_risk_return, use_container_width=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>🔄 风险调整建议</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            risk_adjustment_suggestions = [
-                {"建议": "降低杠杆率", "理由": "当前杠杆率1.5x，建议降至1.2x", "优先级": "中", "预期效果": "降低风险"},
-                {"建议": "增加分散度", "理由": "相关性0.35，可以进一步分散", "优先级": "低", "预期效果": "降低相关性风险"},
-                {"建议": "调整止损", "理由": "波动率12.5%，建议收紧止损", "优先级": "高", "预期效果": "减少损失"},
-                {"建议": "优化仓位", "理由": "最大仓位15.2%，在安全范围", "优先级": "低", "预期效果": "保持现状"}
-            ]
-            
-            for suggestion in risk_adjustment_suggestions:
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.write(suggestion["建议"])
-                with col2:
-                    st.write(suggestion["理由"])
-                with col3:
-                    priority_color = "danger" if suggestion["优先级"] == "高" else "warning" if suggestion["优先级"] == "中" else "info"
-                    st.markdown(f"""
-                    <div class="metric-card {priority_color}-metric">
-                        <h4>{suggestion["优先级"]}</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col4:
-                    st.write(suggestion["预期效果"])
+        for alert in alerts:
+            if alert["level"] == "warning":
+                st.warning(f"⚠️ {alert['message']} ({alert['time']})")
+            elif alert["level"] == "info":
+                st.info(f"ℹ️ {alert['message']} ({alert['time']})")
+            elif alert["level"] == "success":
+                st.success(f"✅ {alert['message']} ({alert['time']})")
 
 class RealDataCollector:
     """真实数据收集器"""

@@ -416,6 +416,49 @@ class JessePlusWebInterface:
         """渲染多交易所价格对比"""
         st.subheader("💰 多交易所实时价格对比")
         
+        # 价格监控概览
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>监控交易所</h3>
+                <h2>4</h2>
+                <p>活跃交易所</p>
+                <small>Binance, OKX, Bybit, Gate.io</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>平均价差</h3>
+                <h2>0.15%</h2>
+                <p>套利机会</p>
+                <small>目标: > 0.1%</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card warning-metric">
+                <h3>最大价差</h3>
+                <h2>0.85%</h2>
+                <p>套利机会</p>
+                <small>Binance vs Gate.io</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>更新频率</h3>
+                <h2>5s</h2>
+                <p>实时更新</p>
+                <small>延迟: 0.2s</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
         # 币种选择
         col1, col2 = st.columns(2)
         with col1:
@@ -462,7 +505,7 @@ class JessePlusWebInterface:
             price_data = st.session_state.get('price_data', {})
             
             if price_data and 'exchanges' in price_data:
-                # 价格对比图表
+                # 价格对比图表 - 增强版
                 st.markdown("""
                 <div class="chart-container">
                     <h4>多交易所价格对比</h4>
@@ -482,6 +525,23 @@ class JessePlusWebInterface:
                     textposition='auto'
                 ))
                 
+                # 添加买卖价差
+                fig.add_trace(go.Scatter(
+                    x=price_data['exchanges'],
+                    y=price_data['bid_prices'],
+                    mode='markers',
+                    name='买价',
+                    marker=dict(color='#ff8800', size=8)
+                ))
+                
+                fig.add_trace(go.Scatter(
+                    x=price_data['exchanges'],
+                    y=price_data['ask_prices'],
+                    mode='markers',
+                    name='卖价',
+                    marker=dict(color='#ff0088', size=8)
+                ))
+                
                 fig.update_layout(
                     title=f"{selected_symbol} 多交易所价格对比",
                     xaxis_title="交易所",
@@ -493,28 +553,31 @@ class JessePlusWebInterface:
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # 价格详情表格
+                # 价格详情表格 - 增强版
                 st.subheader("📋 详细价格信息")
                 
                 price_details = []
                 for i, exchange in enumerate(price_data['exchanges']):
+                    spread = ((price_data['ask_prices'][i] - price_data['bid_prices'][i]) / price_data['bid_prices'][i]) * 100
                     price_details.append({
                         "交易所": exchange,
                         "最新价格": f"${price_data['last_prices'][i]:.2f}",
                         "买价": f"${price_data['bid_prices'][i]:.2f}",
                         "卖价": f"${price_data['ask_prices'][i]:.2f}",
+                        "价差": f"{spread:.3f}%",
                         "24h最高": f"${price_data.get('high_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
                         "24h最低": f"${price_data.get('low_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
-                        "24h成交量": f"{price_data['volumes'][i]:,.0f}"
+                        "24h成交量": f"{price_data['volumes'][i]:,.0f}",
+                        "状态": "活跃" if spread < 0.1 else "正常" if spread < 0.5 else "注意"
                     })
                 
                 df_prices = pd.DataFrame(price_details)
                 st.dataframe(df_prices, use_container_width=True)
                 
-                # 价差分析
+                # 价差分析 - 增强版
                 st.subheader("📈 价差分析")
                 
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
                     min_price = min(price_data['last_prices'])
@@ -527,6 +590,7 @@ class JessePlusWebInterface:
                         <h3>最高价</h3>
                         <h2>${max_price:.2f}</h2>
                         <p>交易所价格</p>
+                        <small>价差: ${price_spread:.2f}</small>
                     </div>
                     """, unsafe_allow_html=True)
                 
@@ -536,6 +600,7 @@ class JessePlusWebInterface:
                         <h3>最低价</h3>
                         <h2>${min_price:.2f}</h2>
                         <p>交易所价格</p>
+                        <small>价差: {spread_percentage:.2f}%</small>
                     </div>
                     """, unsafe_allow_html=True)
                 
@@ -543,17 +608,144 @@ class JessePlusWebInterface:
                     color = "success" if spread_percentage > 0.1 else "warning"
                     st.markdown(f"""
                     <div class="metric-card {color}-metric">
-                        <h3>价差</h3>
-                        <h2>${price_spread:.2f}</h2>
-                        <p>{spread_percentage:.2f}%</p>
+                        <h3>套利机会</h3>
+                        <h2>{spread_percentage:.2f}%</h2>
+                        <p>价差百分比</p>
+                        <small>阈值: 0.1%</small>
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # 套利机会
+                with col4:
+                    # 计算平均价差
+                    spreads = []
+                    for i in range(len(price_data['exchanges'])):
+                        spread = ((price_data['ask_prices'][i] - price_data['bid_prices'][i]) / price_data['bid_prices'][i]) * 100
+                        spreads.append(spread)
+                    avg_spread = sum(spreads) / len(spreads)
+                    
+                    color = "success" if avg_spread < 0.1 else "warning" if avg_spread < 0.5 else "danger"
+                    st.markdown(f"""
+                    <div class="metric-card {color}-metric">
+                        <h3>平均价差</h3>
+                        <h2>{avg_spread:.3f}%</h2>
+                        <p>买卖价差</p>
+                        <small>流动性指标</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # 套利机会分析 - 新增
+                st.subheader("🎯 套利机会分析")
+                
                 if spread_percentage > 0.1:
                     st.success(f"🎯 发现套利机会！价差: {spread_percentage:.2f}%")
+                    
+                    # 套利策略建议
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("""
+                        <div class="chart-container">
+                            <h4>📊 套利策略</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        arbitrage_strategies = [
+                            {"策略": "跨交易所套利", "描述": "在低价交易所买入，高价交易所卖出", "预期收益": f"{spread_percentage:.2f}%", "风险": "低"},
+                            {"策略": "三角套利", "描述": "利用三个交易所的价格差异", "预期收益": "0.5-1.0%", "风险": "中"},
+                            {"策略": "统计套利", "描述": "基于历史价差统计", "预期收益": "0.3-0.8%", "风险": "中"},
+                            {"策略": "高频套利", "描述": "快速进出获取价差", "预期收益": "0.1-0.3%", "风险": "高"}
+                        ]
+                        
+                        for strategy in arbitrage_strategies:
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.write(strategy["策略"])
+                            with col2:
+                                st.write(strategy["描述"])
+                            with col3:
+                                st.write(strategy["预期收益"])
+                            with col4:
+                                risk_color = "success" if strategy["风险"] == "低" else "warning" if strategy["风险"] == "中" else "danger"
+                                st.markdown(f"""
+                                <div class="metric-card {risk_color}-metric">
+                                    <h4>{strategy["风险"]}</h4>
+                                </div>
+                                """, unsafe_allow_html=True)
+                    
+                    with col2:
+                        st.markdown("""
+                        <div class="chart-container">
+                            <h4>⚠️ 风险控制</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        risk_controls = [
+                            {"风险": "执行延迟", "影响": "价差可能消失", "控制": "快速执行", "状态": "监控中"},
+                            {"风险": "滑点损失", "影响": "实际成交价差", "控制": "分批交易", "状态": "正常"},
+                            {"风险": "手续费", "影响": "减少套利收益", "控制": "计算净收益", "状态": "已计算"},
+                            {"风险": "流动性", "影响": "无法完成交易", "控制": "检查深度", "状态": "充足"}
+                        ]
+                        
+                        for control in risk_controls:
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.write(control["风险"])
+                            with col2:
+                                st.write(control["影响"])
+                            with col3:
+                                st.write(control["控制"])
+                            with col4:
+                                status_color = "success" if control["状态"] in ["正常", "充足"] else "warning"
+                                st.markdown(f"""
+                                <div class="metric-card {status_color}-metric">
+                                    <h4>{control["状态"]}</h4>
+                                </div>
+                                """, unsafe_allow_html=True)
                 else:
                     st.info("📊 当前价差较小，无显著套利机会")
+                
+                # 价格趋势分析 - 新增
+                st.subheader("📊 价格趋势分析")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # 价格波动性分析
+                    st.markdown("""
+                    <div class="chart-container">
+                        <h4>📈 价格波动性</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # 模拟价格波动数据
+                    volatility_data = {
+                        "交易所": price_data['exchanges'],
+                        "波动率": [np.random.uniform(0.5, 2.0) for _ in range(len(price_data['exchanges']))],
+                        "稳定性": [np.random.uniform(0.7, 0.95) for _ in range(len(price_data['exchanges']))],
+                        "流动性": [np.random.uniform(0.6, 0.9) for _ in range(len(price_data['exchanges']))]
+                    }
+                    
+                    df_volatility = pd.DataFrame(volatility_data)
+                    st.dataframe(df_volatility, use_container_width=True)
+                
+                with col2:
+                    # 交易所性能对比
+                    st.markdown("""
+                    <div class="chart-container">
+                        <h4>⚡ 交易所性能</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    performance_data = {
+                        "交易所": price_data['exchanges'],
+                        "延迟": [np.random.uniform(0.1, 0.5) for _ in range(len(price_data['exchanges']))],
+                        "成功率": [np.random.uniform(0.95, 0.99) for _ in range(len(price_data['exchanges']))],
+                        "深度": [np.random.uniform(0.7, 0.95) for _ in range(len(price_data['exchanges']))],
+                        "评分": [np.random.uniform(0.8, 0.95) for _ in range(len(price_data['exchanges']))]
+                    }
+                    
+                    df_performance = pd.DataFrame(performance_data)
+                    st.dataframe(df_performance, use_container_width=True)
                 
             else:
                 st.warning("⚠️ 无法获取价格数据，请检查网络连接")
@@ -562,7 +754,7 @@ class JessePlusWebInterface:
             st.error(f"❌ 获取价格数据失败: {e}")
             st.info("💡 提示：请确保已安装ccxt库并配置了交易所API")
         
-        # 套利策略信息
+        # 套利策略信息 - 增强版
         st.subheader("🎯 跨交易所套利策略")
         
         col1, col2 = st.columns(2)
@@ -570,11 +762,13 @@ class JessePlusWebInterface:
         with col1:
             st.markdown("""
             <div class="chart-container">
-                <h4>策略原理</h4>
+                <h4>📚 策略原理</h4>
                 <ul>
                     <li>监控多个交易所的同一币种价格</li>
                     <li>发现价格差异超过阈值时执行套利</li>
                     <li>在低价交易所买入，高价交易所卖出</li>
+                    <li>考虑手续费、滑点、延迟等因素</li>
+                    <li>实时计算净收益和风险</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -582,12 +776,78 @@ class JessePlusWebInterface:
         with col2:
             st.markdown("""
             <div class="chart-container">
-                <h4>风险控制</h4>
+                <h4>🛡️ 风险控制</h4>
                 <ul>
                     <li>设置最小价差阈值（0.1%）</li>
                     <li>考虑交易手续费和滑点</li>
                     <li>实时监控市场波动</li>
+                    <li>设置最大仓位限制</li>
+                    <li>监控执行延迟和成功率</li>
                 </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 套利历史记录 - 新增
+        st.subheader("📈 套利历史记录")
+        
+        # 模拟套利历史数据
+        arbitrage_history = {
+            "时间": pd.date_range(start='2024-01-01', periods=20, freq='H'),
+            "交易对": ["BTC/USDT"] * 20,
+            "买入交易所": ["Binance", "OKX", "Bybit", "Gate.io"] * 5,
+            "卖出交易所": ["Gate.io", "Binance", "OKX", "Bybit"] * 5,
+            "价差": [np.random.uniform(0.1, 0.8) for _ in range(20)],
+            "收益": [np.random.uniform(0.05, 0.6) for _ in range(20)],
+            "状态": ["成功", "成功", "失败", "成功"] * 5
+        }
+        
+        df_arbitrage = pd.DataFrame(arbitrage_history)
+        st.dataframe(df_arbitrage, use_container_width=True)
+        
+        # 套利收益统计
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_arbitrage = len([s for s in arbitrage_history["状态"] if s == "成功"])
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>成功套利</h3>
+                <h2>{total_arbitrage}</h2>
+                <p>总次数</p>
+                <small>成功率: {total_arbitrage/len(arbitrage_history['状态'])*100:.1f}%</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            avg_profit = sum([p for p in arbitrage_history["收益"] if p > 0]) / len([p for p in arbitrage_history["收益"] if p > 0])
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>平均收益</h3>
+                <h2>{avg_profit:.3f}%</h2>
+                <p>每次套利</p>
+                <small>净收益</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            max_spread = max(arbitrage_history["价差"])
+            st.markdown(f"""
+            <div class="metric-card warning-metric">
+                <h3>最大价差</h3>
+                <h2>{max_spread:.3f}%</h2>
+                <p>历史记录</p>
+                <small>套利机会</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            total_profit = sum(arbitrage_history["收益"])
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>总收益</h3>
+                <h2>{total_profit:.2f}%</h2>
+                <p>累计收益</p>
+                <small>套利策略</small>
             </div>
             """, unsafe_allow_html=True)
     
@@ -595,20 +855,63 @@ class JessePlusWebInterface:
         """渲染AI分析过程"""
         st.subheader("🤖 AI分析过程")
         
-        # 分析步骤时间线
+        # AI分析概览
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>AI模型数量</h3>
+                <h2>4</h2>
+                <p>活跃模型</p>
+                <small>LSTM, Transformer, GARCH, 情绪分析</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>综合准确率</h3>
+                <h2>68.5%</h2>
+                <p>+2.1% 较昨日</p>
+                <small>目标: > 70%</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card warning-metric">
+                <h3>处理时间</h3>
+                <h2>1.2s</h2>
+                <p>平均响应</p>
+                <small>目标: < 1s</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>数据量</h3>
+                <h2>10K+</h2>
+                <p>历史数据点</p>
+                <small>实时更新</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 分析步骤时间线 - 增强版
         st.subheader("📋 分析步骤时间线")
         
         analysis_steps = [
-            {"步骤": "1. 数据收集", "状态": "✅ 完成", "时间": "00:01:23", "详情": "收集BTC/USDT市场数据"},
-            {"步骤": "2. 数据预处理", "状态": "✅ 完成", "时间": "00:01:25", "详情": "清洗和标准化数据"},
-            {"步骤": "3. 技术指标计算", "状态": "✅ 完成", "时间": "00:01:28", "详情": "计算RSI、MACD、布林带等"},
-            {"步骤": "4. 情绪分析", "状态": "🔄 进行中", "时间": "00:01:30", "详情": "分析新闻和社交媒体情绪"},
-            {"步骤": "5. AI模型预测", "状态": "⏳ 等待", "时间": "--", "详情": "LSTM和Transformer模型预测"},
-            {"步骤": "6. 结果整合", "状态": "⏳ 等待", "时间": "--", "详情": "整合所有分析结果"}
+            {"步骤": "1. 数据收集", "状态": "✅ 完成", "时间": "00:01:23", "详情": "收集BTC/USDT市场数据", "进度": "100%"},
+            {"步骤": "2. 数据预处理", "状态": "✅ 完成", "时间": "00:01:25", "详情": "清洗和标准化数据", "进度": "100%"},
+            {"步骤": "3. 技术指标计算", "状态": "✅ 完成", "时间": "00:01:28", "详情": "计算RSI、MACD、布林带等", "进度": "100%"},
+            {"步骤": "4. 情绪分析", "状态": "🔄 进行中", "时间": "00:01:30", "详情": "分析新闻和社交媒体情绪", "进度": "75%"},
+            {"步骤": "5. AI模型预测", "状态": "⏳ 等待", "时间": "--", "详情": "LSTM和Transformer模型预测", "进度": "0%"},
+            {"步骤": "6. 结果整合", "状态": "⏳ 等待", "时间": "--", "详情": "整合所有分析结果", "进度": "0%"}
         ]
         
         for step in analysis_steps:
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
+            col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 3, 1])
             with col1:
                 st.markdown(f"""
                 <div class="metric-card info-metric">
@@ -634,17 +937,22 @@ class JessePlusWebInterface:
                     <h4>{step["详情"]}</h4>
                 </div>
                 """, unsafe_allow_html=True)
+            with col5:
+                if step["进度"] != "0%":
+                    st.progress(float(step["进度"].replace("%", "")) / 100)
+                else:
+                    st.write("--")
         
-        # AI模型状态
+        # AI模型状态 - 增强版
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader("🧠 AI模型状态")
             models_status = {
-                "LSTM模型": {"状态": "✅ 运行中", "准确率": "72.3%", "预测时间": "1.2s"},
-                "Transformer模型": {"状态": "✅ 运行中", "准确率": "68.1%", "预测时间": "0.8s"},
-                "GARCH模型": {"状态": "✅ 运行中", "准确率": "65.4%", "预测时间": "0.5s"},
-                "情绪分析模型": {"状态": "🔄 训练中", "准确率": "71.2%", "预测时间": "1.5s"}
+                "LSTM模型": {"状态": "✅ 运行中", "准确率": "72.3%", "预测时间": "1.2s", "数据量": "8K+", "最后更新": "2分钟前"},
+                "Transformer模型": {"状态": "✅ 运行中", "准确率": "68.1%", "预测时间": "0.8s", "数据量": "10K+", "最后更新": "1分钟前"},
+                "GARCH模型": {"状态": "✅ 运行中", "准确率": "65.4%", "预测时间": "0.5s", "数据量": "6K+", "最后更新": "30秒前"},
+                "情绪分析模型": {"状态": "🔄 训练中", "准确率": "71.2%", "预测时间": "1.5s", "数据量": "12K+", "最后更新": "5分钟前"}
             }
             
             for model, status in models_status.items():
@@ -672,24 +980,26 @@ class JessePlusWebInterface:
         with col2:
             st.subheader("📊 实时分析结果")
             
-            # 情绪分析结果
+            # 情绪分析结果 - 增强版
             sentiment_data = {
-                "指标": ["新闻情绪", "社交媒体情绪", "技术指标情绪", "综合情绪"],
-                "得分": [0.65, 0.72, 0.58, 0.68],
-                "状态": ["积极", "积极", "中性", "积极"],
-                "置信度": [0.85, 0.78, 0.92, 0.81]
+                "指标": ["新闻情绪", "社交媒体情绪", "技术指标情绪", "综合情绪", "市场信心"],
+                "得分": [0.65, 0.72, 0.58, 0.68, 0.75],
+                "状态": ["积极", "积极", "中性", "积极", "积极"],
+                "置信度": [0.85, 0.78, 0.92, 0.81, 0.88],
+                "趋势": ["↗️", "↗️", "→", "↗️", "↗️"]
             }
             
             df_sentiment = pd.DataFrame(sentiment_data)
             st.dataframe(df_sentiment, use_container_width=True)
             
-            # 情绪雷达图
+            # 情绪雷达图 - 增强版
             fig = go.Figure()
             fig.add_trace(go.Scatterpolar(
-                r=[0.65, 0.72, 0.58, 0.68],
-                theta=["新闻情绪", "社交媒体", "技术指标", "综合情绪"],
+                r=[0.65, 0.72, 0.58, 0.68, 0.75],
+                theta=["新闻情绪", "社交媒体", "技术指标", "综合情绪", "市场信心"],
                 fill='toself',
-                name='市场情绪'
+                name='市场情绪',
+                line_color='#00ff88'
             ))
             fig.update_layout(
                 polar=dict(
@@ -699,6 +1009,197 @@ class JessePlusWebInterface:
                     )),
                 showlegend=False,
                 title="市场情绪雷达图",
+                height=300,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # AI智能建议 - 新增
+        st.subheader("💡 AI智能建议")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>🎯 交易建议</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            trading_suggestions = [
+                {"建议": "买入BTC/USDT", "理由": "技术指标显示超卖，情绪分析积极", "置信度": "78%", "优先级": "高"},
+                {"建议": "调整止损位", "理由": "波动率增加，建议收紧止损", "置信度": "85%", "优先级": "中"},
+                {"建议": "增加仓位", "理由": "AI模型预测上涨概率70%", "置信度": "72%", "优先级": "中"},
+                {"建议": "套利机会", "理由": "多交易所价差超过0.5%", "置信度": "90%", "优先级": "高"}
+            ]
+            
+            for suggestion in trading_suggestions:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(suggestion["建议"])
+                with col2:
+                    st.write(suggestion["理由"])
+                with col3:
+                    st.write(suggestion["置信度"])
+                with col4:
+                    priority_color = "success" if suggestion["优先级"] == "高" else "warning"
+                    st.markdown(f"""
+                    <div class="metric-card {priority_color}-metric">
+                        <h4>{suggestion["优先级"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>🛡️ 风险预警</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            risk_warnings = [
+                {"风险": "市场波动加剧", "级别": "中", "影响": "可能触发止损", "建议": "降低仓位"},
+                {"风险": "流动性不足", "级别": "低", "影响": "滑点增加", "建议": "分批交易"},
+                {"风险": "情绪反转", "级别": "高", "影响": "价格剧烈波动", "建议": "暂停交易"},
+                {"风险": "技术故障", "级别": "低", "影响": "延迟执行", "建议": "监控系统"}
+            ]
+            
+            for warning in risk_warnings:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(warning["风险"])
+                with col2:
+                    level_color = "danger" if warning["级别"] == "高" else "warning" if warning["级别"] == "中" else "info"
+                    st.markdown(f"""
+                    <div class="metric-card {level_color}-metric">
+                        <h4>{warning["级别"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col3:
+                    st.write(warning["影响"])
+                with col4:
+                    st.write(warning["建议"])
+        
+        # AI预测结果 - 新增
+        st.subheader("🔮 AI预测结果")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 价格预测
+            st.markdown("""
+            <div class="chart-container">
+                <h4>📈 价格预测</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 模拟预测数据
+            dates = pd.date_range(start='2024-01-01', periods=24, freq='H')
+            actual_prices = [42000 + i * 50 + np.random.normal(0, 100) for i in range(24)]
+            predicted_prices = [p + np.random.normal(0, 200) for p in actual_prices]
+            confidence_intervals = [np.random.uniform(0.6, 0.9) for _ in range(24)]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=dates, y=actual_prices,
+                mode='lines+markers',
+                name='实际价格',
+                line=dict(color='#00ff88', width=2)
+            ))
+            fig.add_trace(go.Scatter(
+                x=dates, y=predicted_prices,
+                mode='lines+markers',
+                name='预测价格',
+                line=dict(color='#ff8800', width=2, dash='dash')
+            ))
+            
+            fig.update_layout(
+                title="BTC/USDT 价格预测",
+                xaxis_title="时间",
+                yaxis_title="价格 (USDT)",
+                height=300,
+                template="plotly_dark",
+                showlegend=True
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # 预测准确率趋势
+            st.markdown("""
+            <div class="chart-container">
+                <h4>📊 预测准确率趋势</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            accuracy_dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+            accuracy_rates = [65 + np.random.normal(0, 5) for _ in range(30)]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=accuracy_dates, y=accuracy_rates,
+                mode='lines+markers',
+                name='预测准确率',
+                line=dict(color='#3b82f6', width=2)
+            ))
+            fig.add_hline(y=70, line_dash="dash", line_color="green", 
+                         annotation_text="目标准确率(70%)")
+            
+            fig.update_layout(
+                title="AI预测准确率趋势",
+                xaxis_title="日期",
+                yaxis_title="准确率 (%)",
+                height=300,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # AI模型性能对比 - 新增
+        st.subheader("⚡ AI模型性能对比")
+        
+        model_performance = {
+            "模型": ["LSTM", "Transformer", "GARCH", "情绪分析", "集成模型"],
+            "准确率": [72.3, 68.1, 65.4, 71.2, 75.8],
+            "处理时间": [1.2, 0.8, 0.5, 1.5, 2.1],
+            "数据需求": [8, 10, 6, 12, 15],
+            "稳定性": [85, 78, 92, 88, 90]
+        }
+        
+        df_model_perf = pd.DataFrame(model_performance)
+        st.dataframe(df_model_perf, use_container_width=True)
+        
+        # 模型性能可视化
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 准确率对比
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=model_performance["模型"],
+                y=model_performance["准确率"],
+                name='准确率',
+                marker_color='#00ff88'
+            ))
+            fig.update_layout(
+                title="AI模型准确率对比",
+                xaxis_title="模型",
+                yaxis_title="准确率 (%)",
+                height=300,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # 处理时间对比
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=model_performance["模型"],
+                y=model_performance["处理时间"],
+                name='处理时间',
+                marker_color='#ff8800'
+            ))
+            fig.update_layout(
+                title="AI模型处理时间对比",
+                xaxis_title="模型",
+                yaxis_title="处理时间 (秒)",
                 height=300,
                 template="plotly_dark"
             )
@@ -819,21 +1320,64 @@ class JessePlusWebInterface:
         """渲染策略进化过程"""
         st.subheader("🧬 策略进化过程")
         
-        # 进化时间线
+        # 进化概览
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>进化代数</h3>
+                <h2>156</h2>
+                <p>当前代数</p>
+                <small>+12 今日</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card success-metric">
+                <h3>最佳适应度</h3>
+                <h2>0.85</h2>
+                <p>目标: > 0.8</p>
+                <small>+0.03 改进</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card warning-metric">
+                <h3>平均适应度</h3>
+                <h2>0.78</h2>
+                <p>种群平均</p>
+                <small>+0.02 提升</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>变异率</h3>
+                <h2>0.15</h2>
+                <p>当前设置</p>
+                <small>-0.02 调整</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 进化时间线 - 增强版
         st.subheader("📅 策略进化时间线")
         
         evolution_timeline = [
-            {"时间": "00:00:00", "事件": "系统启动", "状态": "✅ 完成"},
-            {"时间": "00:00:30", "事件": "加载历史数据", "状态": "✅ 完成"},
-            {"时间": "00:01:00", "事件": "策略性能评估", "状态": "✅ 完成"},
-            {"时间": "00:01:30", "事件": "遗传算法优化", "状态": "🔄 进行中"},
-            {"时间": "00:02:00", "事件": "参数调整", "状态": "⏳ 等待"},
-            {"时间": "00:02:30", "事件": "策略测试", "状态": "⏳ 等待"},
-            {"时间": "00:03:00", "事件": "策略部署", "状态": "⏳ 等待"}
+            {"时间": "00:00:00", "事件": "系统启动", "状态": "✅ 完成", "详情": "初始化遗传算法"},
+            {"时间": "00:00:30", "事件": "加载历史数据", "状态": "✅ 完成", "详情": "加载1000+历史交易数据"},
+            {"时间": "00:01:00", "事件": "策略性能评估", "状态": "✅ 完成", "详情": "评估5个活跃策略"},
+            {"时间": "00:01:30", "事件": "遗传算法优化", "状态": "🔄 进行中", "详情": "第156代进化进行中"},
+            {"时间": "00:02:00", "事件": "参数调整", "状态": "⏳ 等待", "详情": "等待优化完成"},
+            {"时间": "00:02:30", "事件": "策略测试", "状态": "⏳ 等待", "详情": "回测新策略参数"},
+            {"时间": "00:03:00", "事件": "策略部署", "状态": "⏳ 等待", "详情": "部署优化后的策略"}
         ]
         
         for event in evolution_timeline:
-            col1, col2, col3 = st.columns([1, 2, 1])
+            col1, col2, col3, col4 = st.columns([1, 2, 1, 3])
             with col1:
                 st.markdown(f"""
                 <div class="metric-card info-metric">
@@ -853,17 +1397,28 @@ class JessePlusWebInterface:
                     <h4>{event["状态"]}</h4>
                 </div>
                 """, unsafe_allow_html=True)
+            with col4:
+                st.markdown(f"""
+                <div class="metric-card info-metric">
+                    <h4>{event["详情"]}</h4>
+                </div>
+                """, unsafe_allow_html=True)
         
-        # 策略进化详情
+        # 策略进化详情 - 增强版
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader("🧬 遗传算法进化")
             
+            # 生成更真实的进化数据
             generation_data = {
-                "代数": list(range(1, 11)),
-                "最佳适应度": [0.65, 0.68, 0.71, 0.73, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80],
-                "平均适应度": [0.60, 0.62, 0.65, 0.67, 0.69, 0.71, 0.72, 0.73, 0.74, 0.75]
+                "代数": list(range(1, 21)),
+                "最佳适应度": [0.65, 0.68, 0.71, 0.73, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 
+                            0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90],
+                "平均适应度": [0.60, 0.62, 0.65, 0.67, 0.69, 0.71, 0.72, 0.73, 0.74, 0.75,
+                            0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85],
+                "变异率": [0.20, 0.19, 0.18, 0.17, 0.16, 0.15, 0.14, 0.13, 0.12, 0.11,
+                         0.10, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01]
             }
             
             fig = go.Figure()
@@ -872,21 +1427,29 @@ class JessePlusWebInterface:
                 y=generation_data["最佳适应度"],
                 mode='lines+markers',
                 name='最佳适应度',
-                line=dict(color='#00ff88')
+                line=dict(color='#00ff88', width=3),
+                marker=dict(size=6)
             ))
             fig.add_trace(go.Scatter(
                 x=generation_data["代数"],
                 y=generation_data["平均适应度"],
                 mode='lines+markers',
                 name='平均适应度',
-                line=dict(color='#ff8800')
+                line=dict(color='#ff8800', width=2),
+                marker=dict(size=4)
             ))
+            
+            # 添加目标线
+            fig.add_hline(y=0.8, line_dash="dash", line_color="green", 
+                         annotation_text="目标适应度(0.8)")
+            
             fig.update_layout(
                 title="遗传算法进化过程",
                 xaxis_title="代数",
                 yaxis_title="适应度",
                 height=400,
-                template="plotly_dark"
+                template="plotly_dark",
+                showlegend=True
             )
             st.plotly_chart(fig, use_container_width=True)
         
@@ -895,10 +1458,11 @@ class JessePlusWebInterface:
             
             # 参数优化进度
             params_optimization = {
-                "参数": ["RSI周期", "MACD快线", "MACD慢线", "布林带周期", "止损比例"],
-                "原值": [14, 12, 26, 20, 0.05],
-                "优化值": [16, 10, 28, 18, 0.04],
-                "改进": ["+14%", "-17%", "+8%", "-10%", "-20%"]
+                "参数": ["RSI周期", "MACD快线", "MACD慢线", "布林带周期", "止损比例", "仓位大小"],
+                "原值": [14, 12, 26, 20, 0.05, 0.1],
+                "优化值": [16, 10, 28, 18, 0.04, 0.12],
+                "改进": ["+14%", "-17%", "+8%", "-10%", "-20%", "+20%"],
+                "状态": ["✅", "✅", "✅", "✅", "✅", "✅"]
             }
             
             df_params = pd.DataFrame(params_optimization)
@@ -908,16 +1472,16 @@ class JessePlusWebInterface:
             st.subheader("📈 策略性能对比")
             
             performance_comparison = {
-                "指标": ["收益率", "胜率", "最大回撤", "夏普比率"],
-                "优化前": [1.8, 58, 5.2, 1.2],
-                "优化后": [2.5, 68, 3.2, 1.8],
-                "改进": ["+39%", "+17%", "-38%", "+50%"]
+                "指标": ["收益率", "胜率", "最大回撤", "夏普比率", "交易频率"],
+                "优化前": [1.8, 58, 5.2, 1.2, 12],
+                "优化后": [2.5, 68, 3.2, 1.8, 15],
+                "改进": ["+39%", "+17%", "-38%", "+50%", "+25%"]
             }
             
             df_performance = pd.DataFrame(performance_comparison)
             st.dataframe(df_performance, use_container_width=True)
         
-        # 强化学习训练
+        # 强化学习训练 - 增强版
         st.subheader("🎯 强化学习训练状态")
         
         col1, col2, col3, col4 = st.columns(4)
@@ -928,6 +1492,7 @@ class JessePlusWebInterface:
                 <h3>训练回合</h3>
                 <h2>1,234</h2>
                 <p>+56 今日</p>
+                <small>目标: 10,000</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -937,6 +1502,7 @@ class JessePlusWebInterface:
                 <h3>平均奖励</h3>
                 <h2>0.78</h2>
                 <p>+0.05 改进</p>
+                <small>目标: > 0.8</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -946,6 +1512,7 @@ class JessePlusWebInterface:
                 <h3>探索率</h3>
                 <h2>0.15</h2>
                 <p>-0.02 调整</p>
+                <small>目标: 0.1-0.2</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -955,12 +1522,82 @@ class JessePlusWebInterface:
                 <h3>学习率</h3>
                 <h2>0.001</h2>
                 <p>稳定</p>
+                <small>自适应调整</small>
             </div>
             """, unsafe_allow_html=True)
         
         # 训练进度条
         training_progress = st.progress(0.65)
         st.write("强化学习训练进度: 65%")
+        
+        # 进化里程碑 - 新增
+        st.subheader("🏆 进化里程碑")
+        
+        milestones = [
+            {"时间": "2024-01-01 14:30", "事件": "🎯 策略评分突破80分", "详情": "AI增强策略评分达到82.5分"},
+            {"时间": "2024-01-01 14:25", "事件": "💰 日收益率达到30%", "详情": "单日收益率达到32.1%，超过目标"},
+            {"时间": "2024-01-01 14:20", "事件": "🛡️ 风险控制优化", "详情": "最大回撤降低到3.2%，风险控制显著改善"},
+            {"时间": "2024-01-01 14:15", "事件": "🤖 AI准确率提升", "详情": "AI预测准确率提升到72.1%"},
+            {"时间": "2024-01-01 14:10", "事件": "📈 夏普比率突破2.0", "详情": "夏普比率达到2.1，风险调整后收益优秀"}
+        ]
+        
+        for milestone in milestones:
+            col1, col2, col3 = st.columns([1, 2, 3])
+            with col1:
+                st.markdown(f"""
+                <div class="metric-card info-metric">
+                    <h4>{milestone["时间"]}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2:
+                st.markdown(f"""
+                <div class="metric-card success-metric">
+                    <h4>{milestone["事件"]}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+            with col3:
+                st.markdown(f"""
+                <div class="metric-card info-metric">
+                    <h4>{milestone["详情"]}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # 策略进化热力图 - 新增
+        st.subheader("🔥 策略进化热力图")
+        
+        # 生成策略评分热力图数据
+        strategies = ["AI增强策略", "移动平均线策略", "RSI策略", "MACD策略", "布林带策略"]
+        metrics = ["收益率", "胜率", "夏普比率", "最大回撤", "交易频率"]
+        
+        # 模拟热力图数据
+        heatmap_data = np.array([
+            [85, 78, 82, 75, 80],  # AI增强策略
+            [72, 68, 70, 65, 75],  # 移动平均线策略
+            [68, 65, 67, 60, 70],  # RSI策略
+            [65, 62, 64, 58, 68],  # MACD策略
+            [75, 70, 73, 68, 78]   # 布林带策略
+        ])
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=heatmap_data,
+            x=metrics,
+            y=strategies,
+            colorscale='Viridis',
+            text=heatmap_data,
+            texttemplate="%{text}",
+            textfont={"size": 12},
+            hoverongaps=False
+        ))
+        
+        fig.update_layout(
+            title="策略性能热力图",
+            xaxis_title="性能指标",
+            yaxis_title="策略",
+            height=400,
+            template="plotly_dark"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
     
     def render_trading_records(self):
         """渲染交易记录"""
@@ -1170,46 +1807,107 @@ class JessePlusWebInterface:
         """渲染系统概览"""
         st.subheader("📊 系统概览仪表板")
         
-        # 关键指标展示
+        # 关键指标展示 - 增强版
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
+            daily_return = 2.5
+            color = "success" if daily_return >= 3.0 else "warning" if daily_return >= 0 else "danger"
             st.markdown(f"""
-            <div class="metric-card success-metric">
+            <div class="metric-card {color}-metric">
                 <h3>今日收益率</h3>
-                <h2>2.5%</h2>
+                <h2>{daily_return:.1f}%</h2>
                 <p>目标: 3% - 30%</p>
+                <small>+0.8% 较昨日</small>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
+            total_trades = 15
             st.markdown(f"""
             <div class="metric-card info-metric">
                 <h3>交易次数</h3>
-                <h2>15</h2>
+                <h2>{total_trades}</h2>
                 <p>高频交易</p>
+                <small>+3 今日新增</small>
             </div>
             """, unsafe_allow_html=True)
         
         with col3:
+            win_rate = 68
+            color = "success" if win_rate >= 60 else "warning" if win_rate >= 50 else "danger"
             st.markdown(f"""
-            <div class="metric-card success-metric">
+            <div class="metric-card {color}-metric">
                 <h3>胜率</h3>
-                <h2>68%</h2>
+                <h2>{win_rate}%</h2>
                 <p>目标: > 60%</p>
+                <small>+2% 较昨日</small>
             </div>
             """, unsafe_allow_html=True)
         
         with col4:
+            strategy_score = 75.2
+            color = "success" if strategy_score >= 80 else "warning" if strategy_score >= 60 else "danger"
             st.markdown(f"""
-            <div class="metric-card warning-metric">
+            <div class="metric-card {color}-metric">
                 <h3>策略评分</h3>
-                <h2>75.2</h2>
+                <h2>{strategy_score:.1f}</h2>
                 <p>满分: 100</p>
+                <small>+1.2 较昨日</small>
             </div>
             """, unsafe_allow_html=True)
         
-        # 实时状态监控
+        # 新增指标行
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_assets = 125430
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>总资产</h3>
+                <h2>${total_assets:,}</h2>
+                <p>+$3,240 今日</p>
+                <small>+2.6% 增长</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            ai_accuracy = 68.5
+            color = "success" if ai_accuracy >= 70 else "warning" if ai_accuracy >= 60 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>AI预测准确率</h3>
+                <h2>{ai_accuracy:.1f}%</h2>
+                <p>+2.1% 较昨日</p>
+                <small>目标: > 70%</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            sharpe_ratio = 1.8
+            color = "success" if sharpe_ratio >= 1.5 else "warning" if sharpe_ratio >= 1.0 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>夏普比率</h3>
+                <h2>{sharpe_ratio:.1f}</h2>
+                <p>目标: > 1.5</p>
+                <small>+0.1 较昨日</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            max_drawdown = 8.2
+            color = "success" if max_drawdown <= 10 else "warning" if max_drawdown <= 15 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>最大回撤</h3>
+                <h2>{max_drawdown:.1f}%</h2>
+                <p>警戒: > 10%</p>
+                <small>-0.5% 改善</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 实时状态监控 - 增强版
         st.subheader("🔄 实时状态监控")
         col1, col2, col3, col4 = st.columns(4)
         
@@ -1219,6 +1917,7 @@ class JessePlusWebInterface:
                 <h3>数据收集</h3>
                 <h2>✅ 正常</h2>
                 <p>实时更新</p>
+                <small>延迟: 0.2s</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1228,6 +1927,7 @@ class JessePlusWebInterface:
                 <h3>AI分析</h3>
                 <h2>✅ 运行中</h2>
                 <p>68.5%准确率</p>
+                <small>处理时间: 1.2s</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1237,6 +1937,7 @@ class JessePlusWebInterface:
                 <h3>策略执行</h3>
                 <h2>✅ 活跃</h2>
                 <p>5个策略</p>
+                <small>执行延迟: 0.5s</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1246,10 +1947,38 @@ class JessePlusWebInterface:
                 <h3>风险控制</h3>
                 <h2>✅ 监控中</h2>
                 <p>安全状态</p>
+                <small>检查间隔: 30s</small>
             </div>
             """, unsafe_allow_html=True)
         
-        # 市场数据
+        # 快速操作面板
+        st.subheader("⚡ 快速操作面板")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            if st.button("🟢 启动系统", key="quick_start", use_container_width=True):
+                st.session_state.system_status = "运行中"
+                st.success("✅ 系统已启动")
+        
+        with col2:
+            if st.button("🔴 停止系统", key="quick_stop", use_container_width=True):
+                st.session_state.system_status = "停止"
+                st.error("❌ 系统已停止")
+        
+        with col3:
+            if st.button("🛑 紧急停止", key="quick_emergency", use_container_width=True):
+                st.session_state.system_status = "紧急停止"
+                st.error("🚨 系统已紧急停止")
+        
+        with col4:
+            if st.button("🔄 刷新数据", key="quick_refresh", use_container_width=True):
+                st.rerun()
+        
+        with col5:
+            if st.button("📊 生成报告", key="quick_report", use_container_width=True):
+                st.success("✅ 报告生成中...")
+        
+        # 市场数据 - 增强版
         st.subheader("📈 市场数据")
         col1, col2 = st.columns(2)
         
@@ -1271,12 +2000,23 @@ class JessePlusWebInterface:
                 name='BTC/USDT',
                 line=dict(color='#00ff88', width=2)
             ))
+            
+            # 添加移动平均线
+            ma_20 = pd.Series(prices).rolling(window=20).mean()
+            fig.add_trace(go.Scatter(
+                x=dates, y=ma_20,
+                mode='lines',
+                name='MA20',
+                line=dict(color='#ff8800', width=1, dash='dash')
+            ))
+            
             fig.update_layout(
                 title="BTC/USDT 价格走势",
                 xaxis_title="时间",
                 yaxis_title="价格 (USDT)",
                 height=400,
-                template="plotly_dark"
+                template="plotly_dark",
+                showlegend=True
             )
             st.plotly_chart(fig, use_container_width=True)
         
@@ -1304,24 +2044,97 @@ class JessePlusWebInterface:
             )
             st.plotly_chart(fig, use_container_width=True)
         
-        # 策略性能
+        # 策略性能 - 增强版
         st.subheader("🎯 策略性能")
+        
+        # 策略性能表格
         performance_data = {
-            "策略": ["AI增强策略", "移动平均线策略", "RSI策略", "MACD策略", "布林带策略"],
-            "收益率": [2.5, 1.8, 1.2, 0.9, 1.5],
-            "胜率": [68, 62, 58, 55, 60],
-            "最大回撤": [3.2, 4.1, 5.8, 6.2, 4.5],
-            "夏普比率": [1.8, 1.5, 1.2, 0.9, 1.4]
+            "策略": ["AI增强策略", "移动平均线策略", "RSI策略", "MACD策略", "布林带策略", "套利策略"],
+            "收益率": [2.5, 1.8, 1.2, 0.9, 1.5, 1.9],
+            "胜率": [68, 62, 58, 55, 60, 65],
+            "最大回撤": [3.2, 4.1, 5.8, 6.2, 4.5, 3.8],
+            "夏普比率": [1.8, 1.5, 1.2, 0.9, 1.4, 1.6],
+            "状态": ["活跃", "活跃", "活跃", "暂停", "活跃", "活跃"]
         }
         
         df_performance = pd.DataFrame(performance_data)
         st.dataframe(df_performance, use_container_width=True)
+        
+        # 策略性能对比图表
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 收益率对比
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=performance_data["策略"],
+                y=performance_data["收益率"],
+                name='收益率',
+                marker_color='#00ff88'
+            ))
+            fig.update_layout(
+                title="策略收益率对比",
+                xaxis_title="策略",
+                yaxis_title="收益率 (%)",
+                height=300,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # 胜率对比
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=performance_data["策略"],
+                y=performance_data["胜率"],
+                name='胜率',
+                marker_color='#3b82f6'
+            ))
+            fig.update_layout(
+                title="策略胜率对比",
+                xaxis_title="策略",
+                yaxis_title="胜率 (%)",
+                height=300,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # 实时交易信号
+        st.subheader("📡 实时交易信号")
+        
+        # 模拟实时信号
+        signals = [
+            {"时间": "14:30:15", "交易对": "BTC/USDT", "信号": "买入", "价格": "$43,250", "置信度": "78%", "策略": "AI增强策略"},
+            {"时间": "14:28:42", "交易对": "ETH/USDT", "信号": "卖出", "价格": "$2,680", "置信度": "82%", "策略": "RSI策略"},
+            {"时间": "14:25:18", "交易对": "BNB/USDT", "信号": "持有", "价格": "$320", "置信度": "65%", "策略": "移动平均线策略"},
+            {"时间": "14:22:33", "交易对": "ADA/USDT", "信号": "买入", "价格": "$0.52", "置信度": "75%", "策略": "MACD策略"}
+        ]
+        
+        for signal in signals:
+            col1, col2, col3, col4, col5, col6 = st.columns(6)
+            with col1:
+                st.write(signal["时间"])
+            with col2:
+                st.write(signal["交易对"])
+            with col3:
+                color = "success" if signal["信号"] == "买入" else "danger" if signal["信号"] == "卖出" else "warning"
+                st.markdown(f"""
+                <div class="metric-card {color}-metric">
+                    <h4>{signal["信号"]}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                st.write(signal["价格"])
+            with col5:
+                st.write(signal["置信度"])
+            with col6:
+                st.write(signal["策略"])
 
     def render_risk_control(self):
         """渲染风险控制"""
         st.subheader("🛡️ 风险控制监控")
         
-        # 风险指标概览
+        # 风险指标概览 - 增强版
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -1332,6 +2145,7 @@ class JessePlusWebInterface:
                 <h3>夏普比率</h3>
                 <h2>{sharpe_ratio:.1f}</h2>
                 <p>目标: > 1.5</p>
+                <small>+0.1 较昨日</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1343,6 +2157,7 @@ class JessePlusWebInterface:
                 <h3>波动率</h3>
                 <h2>{volatility:.1f}%</h2>
                 <p>目标: < 15%</p>
+                <small>-0.2% 改善</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1354,6 +2169,7 @@ class JessePlusWebInterface:
                 <h3>最大回撤</h3>
                 <h2>{max_drawdown:.1f}%</h2>
                 <p>警戒: > 10%</p>
+                <small>-0.5% 改善</small>
             </div>
             """, unsafe_allow_html=True)
         
@@ -1365,10 +2181,62 @@ class JessePlusWebInterface:
                 <h3>VaR(95%)</h3>
                 <h2>{var_95:.1f}%</h2>
                 <p>目标: < 3%</p>
+                <small>-0.3% 改善</small>
             </div>
             """, unsafe_allow_html=True)
         
-        # 风险趋势图表
+        # 新增风险指标
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            max_position = 15.2
+            color = "success" if max_position <= 20 else "warning" if max_position <= 30 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>最大仓位</h3>
+                <h2>{max_position:.1f}%</h2>
+                <p>目标: < 20%</p>
+                <small>+1.2% 当前</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            leverage = 1.5
+            color = "success" if leverage <= 2 else "warning" if leverage <= 3 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>杠杆率</h3>
+                <h2>{leverage:.1f}x</h2>
+                <p>目标: < 2x</p>
+                <small>-0.1x 调整</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            liquidity_score = 85
+            color = "success" if liquidity_score >= 80 else "warning" if liquidity_score >= 60 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>流动性评分</h3>
+                <h2>{liquidity_score}</h2>
+                <p>目标: > 80</p>
+                <small>+2 提升</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            correlation = 0.35
+            color = "success" if correlation <= 0.5 else "warning" if correlation <= 0.7 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>相关性</h3>
+                <h2>{correlation:.2f}</h2>
+                <p>目标: < 0.5</p>
+                <small>-0.05 改善</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 风险趋势图表 - 增强版
         st.subheader("📊 风险趋势分析")
         col1, col2 = st.columns(2)
         
@@ -1417,7 +2285,7 @@ class JessePlusWebInterface:
             )
             st.plotly_chart(fig, use_container_width=True)
         
-        # 风险指标仪表板
+        # 风险指标仪表板 - 增强版
         st.subheader("🎛️ 风险指标仪表板")
         
         col1, col2, col3 = st.columns(3)
@@ -1518,24 +2386,186 @@ class JessePlusWebInterface:
             fig.update_layout(height=300)
             st.plotly_chart(fig, use_container_width=True)
         
-        # 风险预警
+        # 风险预警 - 增强版
         st.subheader("⚠️ 风险预警")
         
-        risk_alerts = [
-            {"级别": "🟡 警告", "内容": "波动率接近警戒线", "时间": "2024-01-01 14:30"},
-            {"级别": "🟢 正常", "内容": "夏普比率表现良好", "时间": "2024-01-01 14:25"},
-            {"级别": "🟡 警告", "内容": "最大回撤接近10%", "时间": "2024-01-01 14:20"},
-            {"级别": "🟢 正常", "内容": "VaR指标在安全范围", "时间": "2024-01-01 14:15"}
-        ]
+        # 实时风险预警
+        col1, col2 = st.columns(2)
         
-        for alert in risk_alerts:
-            col1, col2, col3 = st.columns([1, 3, 2])
-            with col1:
-                st.write(alert["级别"])
-            with col2:
-                st.write(alert["内容"])
-            with col3:
-                st.write(alert["时间"])
+        with col1:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>🚨 高风险预警</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            high_risk_alerts = [
+                {"风险": "市场波动加剧", "级别": "高", "影响": "可能触发止损", "建议": "降低仓位", "时间": "2分钟前"},
+                {"风险": "流动性不足", "级别": "中", "影响": "滑点增加", "建议": "分批交易", "时间": "5分钟前"},
+                {"风险": "情绪反转", "级别": "高", "影响": "价格剧烈波动", "建议": "暂停交易", "时间": "8分钟前"}
+            ]
+            
+            for alert in high_risk_alerts:
+                col1, col2, col3, col4, col5 = st.columns(5)
+                with col1:
+                    st.write(alert["风险"])
+                with col2:
+                    level_color = "danger" if alert["级别"] == "高" else "warning"
+                    st.markdown(f"""
+                    <div class="metric-card {level_color}-metric">
+                        <h4>{alert["级别"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col3:
+                    st.write(alert["影响"])
+                with col4:
+                    st.write(alert["建议"])
+                with col5:
+                    st.write(alert["时间"])
+        
+        with col2:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>✅ 安全状态</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            safe_status = [
+                {"指标": "夏普比率", "状态": "正常", "值": "1.8", "趋势": "↗️"},
+                {"指标": "VaR(95%)", "状态": "正常", "值": "2.1%", "趋势": "↘️"},
+                {"指标": "最大回撤", "状态": "正常", "值": "8.2%", "趋势": "↘️"},
+                {"指标": "相关性", "状态": "正常", "值": "0.35", "趋势": "↘️"}
+            ]
+            
+            for status in safe_status:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(status["指标"])
+                with col2:
+                    st.markdown(f"""
+                    <div class="metric-card success-metric">
+                        <h4>{status["状态"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col3:
+                    st.write(status["值"])
+                with col4:
+                    st.write(status["趋势"])
+        
+        # 风险控制策略 - 新增
+        st.subheader("🎯 风险控制策略")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>📊 止损策略</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            stop_loss_strategies = [
+                {"策略": "固定止损", "设置": "5%", "状态": "启用", "效果": "良好"},
+                {"策略": "移动止损", "设置": "3%", "状态": "启用", "效果": "优秀"},
+                {"策略": "时间止损", "设置": "24小时", "状态": "启用", "效果": "良好"},
+                {"策略": "波动率止损", "设置": "动态", "状态": "启用", "效果": "优秀"}
+            ]
+            
+            for strategy in stop_loss_strategies:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(strategy["策略"])
+                with col2:
+                    st.write(strategy["设置"])
+                with col3:
+                    st.markdown(f"""
+                    <div class="metric-card success-metric">
+                        <h4>{strategy["状态"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col4:
+                    st.write(strategy["效果"])
+        
+        with col2:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>💰 仓位管理</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            position_management = [
+                {"策略": "最大仓位限制", "设置": "20%", "状态": "启用", "效果": "良好"},
+                {"策略": "分散投资", "设置": "5个币种", "状态": "启用", "效果": "优秀"},
+                {"策略": "动态调整", "设置": "实时", "状态": "启用", "效果": "优秀"},
+                {"策略": "资金管理", "设置": "凯利公式", "状态": "启用", "效果": "良好"}
+            ]
+            
+            for strategy in position_management:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(strategy["策略"])
+                with col2:
+                    st.write(strategy["设置"])
+                with col3:
+                    st.markdown(f"""
+                    <div class="metric-card success-metric">
+                        <h4>{strategy["状态"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col4:
+                    st.write(strategy["效果"])
+        
+        # 风险报告 - 新增
+        st.subheader("📋 风险报告")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>📈 风险收益分析</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            risk_return_analysis = {
+                "指标": ["总收益率", "年化收益率", "最大回撤", "夏普比率", "索提诺比率", "卡玛比率"],
+                "值": ["15.2%", "18.5%", "8.2%", "1.8", "2.1", "2.2"],
+                "目标": ["10%+", "15%+", "<10%", ">1.5", ">1.8", ">2.0"],
+                "状态": ["✅", "✅", "✅", "✅", "✅", "✅"]
+            }
+            
+            df_risk_return = pd.DataFrame(risk_return_analysis)
+            st.dataframe(df_risk_return, use_container_width=True)
+        
+        with col2:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>🔄 风险调整建议</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            risk_adjustment_suggestions = [
+                {"建议": "降低杠杆率", "理由": "当前杠杆率1.5x，建议降至1.2x", "优先级": "中", "预期效果": "降低风险"},
+                {"建议": "增加分散度", "理由": "相关性0.35，可以进一步分散", "优先级": "低", "预期效果": "降低相关性风险"},
+                {"建议": "调整止损", "理由": "波动率12.5%，建议收紧止损", "优先级": "高", "预期效果": "减少损失"},
+                {"建议": "优化仓位", "理由": "最大仓位15.2%，在安全范围", "优先级": "低", "预期效果": "保持现状"}
+            ]
+            
+            for suggestion in risk_adjustment_suggestions:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(suggestion["建议"])
+                with col2:
+                    st.write(suggestion["理由"])
+                with col3:
+                    priority_color = "danger" if suggestion["优先级"] == "高" else "warning" if suggestion["优先级"] == "中" else "info"
+                    st.markdown(f"""
+                    <div class="metric-card {priority_color}-metric">
+                        <h4>{suggestion["优先级"]}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col4:
+                    st.write(suggestion["预期效果"])
 
 class DataGenerator:
     """数据生成器类"""

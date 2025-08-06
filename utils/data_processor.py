@@ -7,7 +7,8 @@ import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split
-import talib
+# import talib  # 替换为finta
+from finta import TA
 from utils.logging_manager import LoggerMixin
 
 class DataProcessor(LoggerMixin):
@@ -114,37 +115,50 @@ class DataProcessor(LoggerMixin):
                 self.logger.warning(f"缺少必要列: {col}")
                 return df_indicators
         
-        # 移动平均线
-        df_indicators['sma_5'] = talib.SMA(df_indicators['close'], timeperiod=5)
-        df_indicators['sma_20'] = talib.SMA(df_indicators['close'], timeperiod=20)
-        df_indicators['ema_12'] = talib.EMA(df_indicators['close'], timeperiod=12)
-        df_indicators['ema_26'] = talib.EMA(df_indicators['close'], timeperiod=26)
-        
-        # MACD
-        macd, macd_signal, macd_hist = talib.MACD(df_indicators['close'])
-        df_indicators['macd'] = macd
-        df_indicators['macd_signal'] = macd_signal
-        df_indicators['macd_hist'] = macd_hist
-        
-        # RSI
-        df_indicators['rsi'] = talib.RSI(df_indicators['close'], timeperiod=14)
-        
-        # 布林带
-        bb_upper, bb_middle, bb_lower = talib.BBANDS(df_indicators['close'])
-        df_indicators['bb_upper'] = bb_upper
-        df_indicators['bb_middle'] = bb_middle
-        df_indicators['bb_lower'] = bb_lower
-        
-        # 随机指标
-        df_indicators['stoch_k'], df_indicators['stoch_d'] = talib.STOCH(
-            df_indicators['high'], df_indicators['low'], df_indicators['close']
-        )
-        
-        # ATR (平均真实波幅)
-        df_indicators['atr'] = talib.ATR(df_indicators['high'], df_indicators['low'], df_indicators['close'])
-        
-        # 成交量指标
-        df_indicators['obv'] = talib.OBV(df_indicators['close'], df_indicators['volume'])
+        try:
+            # 使用finta计算技术指标
+            # 移动平均线
+            df_indicators['sma_5'] = TA.SMA(df_indicators, 5)
+            df_indicators['sma_20'] = TA.SMA(df_indicators, 20)
+            df_indicators['ema_12'] = TA.EMA(df_indicators, 12)
+            df_indicators['ema_26'] = TA.EMA(df_indicators, 26)
+            
+            # MACD
+            macd_data = TA.MACD(df_indicators)
+            if isinstance(macd_data, pd.DataFrame):
+                df_indicators['macd'] = macd_data['MACD']
+                df_indicators['macd_signal'] = macd_data['MACD_signal']
+                df_indicators['macd_hist'] = macd_data['MACD_hist']
+            else:
+                # 如果返回的是Series，尝试分别计算
+                df_indicators['macd'] = macd_data
+            
+            # RSI
+            df_indicators['rsi'] = TA.RSI(df_indicators, 14)
+            
+            # 布林带
+            bb_data = TA.BBANDS(df_indicators)
+            if isinstance(bb_data, pd.DataFrame):
+                df_indicators['bb_upper'] = bb_data['BB_UPPER']
+                df_indicators['bb_middle'] = bb_data['BB_MIDDLE']
+                df_indicators['bb_lower'] = bb_data['BB_LOWER']
+            
+            # 随机指标
+            stoch_data = TA.STOCH(df_indicators)
+            if isinstance(stoch_data, pd.DataFrame):
+                df_indicators['stoch_k'] = stoch_data['STOCH_K']
+                df_indicators['stoch_d'] = stoch_data['STOCH_D']
+            
+            # ATR (平均真实波幅)
+            df_indicators['atr'] = TA.ATR(df_indicators, 14)
+            
+            # 成交量指标
+            df_indicators['obv'] = TA.OBV(df_indicators)
+            
+        except Exception as e:
+            self.logger.warning(f"计算技术指标时出错: {e}")
+            # 如果finta计算失败，使用pandas原生方法作为备选
+            self._add_fallback_indicators(df_indicators)
         
         # 价格变化率
         df_indicators['price_change'] = df_indicators['close'].pct_change()
@@ -155,6 +169,33 @@ class DataProcessor(LoggerMixin):
         
         self.logger.info("✅ 技术指标添加完成")
         return df_indicators
+    
+    def _add_fallback_indicators(self, df: pd.DataFrame) -> None:
+        """添加备选技术指标（当finta失败时使用）"""
+        try:
+            # 简单的移动平均线
+            df['sma_5'] = df['close'].rolling(window=5).mean()
+            df['sma_20'] = df['close'].rolling(window=20).mean()
+            df['ema_12'] = df['close'].ewm(span=12).mean()
+            df['ema_26'] = df['close'].ewm(span=26).mean()
+            
+            # 简单的RSI计算
+            delta = df['close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / loss
+            df['rsi'] = 100 - (100 / (1 + rs))
+            
+            # 简单的布林带
+            df['bb_middle'] = df['close'].rolling(window=20).mean()
+            bb_std = df['close'].rolling(window=20).std()
+            df['bb_upper'] = df['bb_middle'] + (bb_std * 2)
+            df['bb_lower'] = df['bb_middle'] - (bb_std * 2)
+            
+            self.logger.info("使用备选技术指标计算方法")
+            
+        except Exception as e:
+            self.logger.error(f"备选技术指标计算也失败: {e}")
     
     def normalize_data(self, df: pd.DataFrame, method: str = 'minmax') -> Tuple[pd.DataFrame, Dict]:
         """

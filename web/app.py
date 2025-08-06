@@ -42,6 +42,37 @@ st.markdown("""
         color: #f8fafc;
     }
     
+    /* JavaScript兼容性修复 */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .stSelectbox > div > div > select {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
+    
+    .stTextInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+    }
+    
     /* 主标题样式 */
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -104,139 +135,6 @@ st.markdown("""
     }
     
     /* 侧边栏样式 */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-    }
-    
-    /* 按钮样式 */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* 标签页样式 - 优化为平均分配宽度 */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0 !important;
-        display: flex !important;
-        width: 100% !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 8px 8px 0 0 !important;
-        padding: 0 !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        flex: 1 !important;
-        background: transparent !important;
-        border-radius: 0 !important;
-        color: #f8fafc !important;
-        border: none !important;
-        border-bottom: 3px solid transparent !important;
-        padding: 12px 8px !important;
-        margin: 0 !important;
-        text-align: center !important;
-        font-weight: 500 !important;
-        transition: all 0.3s ease !important;
-        min-width: 0 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
-        color: white !important;
-        border-bottom: 3px solid #60a5fa !important;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
-    }
-    
-    .stTabs [aria-selected="true"]:hover {
-        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
-    }
-    
-    /* 标签页内容区域样式 */
-    .stTabs [data-baseweb="tab-panel"] {
-        background: rgba(255, 255, 255, 0.02) !important;
-        border-radius: 0 0 8px 8px !important;
-        padding: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-top: none !important;
-    }
-    
-    /* 响应式设计 - 小屏幕时标签页换行 */
-    @media (max-width: 768px) {
-        .stTabs [data-baseweb="tab-list"] {
-            flex-wrap: wrap !important;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            flex: 1 1 calc(50% - 4px) !important;
-            min-width: 120px !important;
-            font-size: 12px !important;
-            padding: 8px 4px !important;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .stTabs [data-baseweb="tab"] {
-            flex: 1 1 calc(33.333% - 4px) !important;
-            font-size: 11px !important;
-            padding: 6px 2px !important;
-        }
-    }
-    
-    /* 数据表格样式 */
-    .dataframe {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        color: #f8fafc;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    
-    /* 进度条样式 */
-    .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-    }
-    
-    /* 状态指示器 */
-    .status-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-    }
-    
-    .status-running {
-        background: #059669;
-        box-shadow: 0 0 8px rgba(5, 150, 105, 0.6);
-    }
-    
-    .status-stopped {
-        background: #dc2626;
-        box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
-    }
-    
-    .status-warning {
-        background: #d97706;
-        box-shadow: 0 0 8px rgba(217, 119, 6, 0.6);
-    }
-    
     .sidebar .sidebar-content {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 10px;
@@ -244,27 +142,47 @@ st.markdown("""
         margin: 0.5rem 0;
     }
     
-    .stSelectbox > div > div > select {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
+    /* 修复密码字段样式 */
+    input[type="password"] {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 6px !important;
     }
     
-    .stTextInput > div > div > input {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
-    }
-    
-    .stNumberInput > div > div > input {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 6px;
+    /* 修复事件监听器警告 */
+    .stButton > button {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
     }
 </style>
+
+<script>
+// JavaScript兼容性修复
+if (typeof crypto === 'undefined' || !crypto.randomUUID) {
+    // 为不支持crypto.randomUUID的浏览器提供polyfill
+    crypto = crypto || {};
+    crypto.randomUUID = function() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+}
+
+// 修复事件监听器警告
+document.addEventListener('DOMContentLoaded', function() {
+    // 为所有按钮添加passive事件监听器
+    var buttons = document.querySelectorAll('.stButton > button');
+    buttons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            // 事件处理逻辑
+        }, { passive: true });
+    });
+});
+</script>
 """, unsafe_allow_html=True)
 
 # 设置日志
@@ -3008,11 +2926,17 @@ class JessePlusWebInterface:
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            if self.auto_evolution_system and self.auto_evolution_system.is_running:
-                status = "🟢 运行中"
-                status_color = "success"
+            if self.auto_evolution_system:
+                # 检查系统是否正在运行
+                is_running = getattr(self.auto_evolution_system, 'is_running', False)
+                if is_running:
+                    status = "🟢 运行中"
+                    status_color = "success"
+                else:
+                    status = "🔴 已停止"
+                    status_color = "danger"
             else:
-                status = "🔴 已停止"
+                status = "🔴 未初始化"
                 status_color = "danger"
             
             st.markdown(f"""
@@ -3080,6 +3004,7 @@ class JessePlusWebInterface:
                     try:
                         self.auto_evolution_system.start_auto_evolution()
                         st.success("✅ 全自动策略进化系统已启动")
+                        st.rerun()
                     except Exception as e:
                         st.error(f"❌ 启动失败: {e}")
                 else:
@@ -3091,6 +3016,7 @@ class JessePlusWebInterface:
                     try:
                         self.auto_evolution_system.stop_auto_evolution()
                         st.success("✅ 全自动策略进化系统已停止")
+                        st.rerun()
                     except Exception as e:
                         st.error(f"❌ 停止失败: {e}")
                 else:

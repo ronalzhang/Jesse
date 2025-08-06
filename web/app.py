@@ -42,59 +42,63 @@ st.markdown("""
     
     /* 主标题样式 */
     .main-header {
-        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
-        border-radius: 15px;
+        border-radius: 10px;
+        margin-bottom: 2rem;
         color: white;
         text-align: center;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 32px rgba(30, 58, 138, 0.3);
+    }
+    
+    .main-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    
+    .main-header p {
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
     }
     
     /* 指标卡片样式 */
     .metric-card {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
         padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        border: 1px solid #475569;
-        margin-bottom: 1rem;
-        transition: transform 0.2s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        margin: 1rem 0;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     .success-metric {
-        border-left: 4px solid #059669;
-        background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
     }
     
     .warning-metric {
-        border-left: 4px solid #d97706;
-        background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+        color: white;
     }
     
     .danger-metric {
-        border-left: 4px solid #dc2626;
-        background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: white;
     }
     
     .info-metric {
-        border-left: 4px solid #3b82f6;
-        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+        color: white;
     }
     
     /* 图表容器样式 */
     .chart-container {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
         padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        border: 1px solid #475569;
-        margin-bottom: 1.5rem;
+        margin: 1rem 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     /* 侧边栏样式 */
@@ -104,19 +108,18 @@ st.markdown("""
     
     /* 按钮样式 */
     .stButton > button {
-        background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
+        padding: 0.75rem 1.5rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
     
     /* 标签页样式 */
@@ -237,9 +240,121 @@ class JessePlusWebInterface:
     def render_header(self):
         """渲染页面头部"""
         st.markdown("""
+        <style>
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            color: white;
+            text-align: center;
+        }
+        .main-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .main-header p {
+            margin: 0.5rem 0 0 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .success-metric {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+        }
+        .warning-metric {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: white;
+        }
+        .danger-metric {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+        }
+        .info-metric {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .sidebar .sidebar-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+        .stButton > button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .stSelectbox > div > div > select {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+        }
+        .stTextInput > div > div > input {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+        }
+        .stNumberInput > div > div > input {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+        }
+        </style>
+        
+        <script>
+        // 同步HTML表单和Streamlit输入框的数据
+        document.addEventListener('DOMContentLoaded', function() {
+            const apiKeyInput = document.getElementById('api_key');
+            const apiSecretInput = document.getElementById('api_secret');
+            
+            if (apiKeyInput) {
+                apiKeyInput.addEventListener('input', function() {
+                    // 这里可以通过Streamlit的session_state来同步数据
+                    console.log('API Key updated:', this.value);
+                });
+            }
+            
+            if (apiSecretInput) {
+                apiSecretInput.addEventListener('input', function() {
+                    console.log('API Secret updated:', this.value);
+                });
+            }
+        });
+        </script>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
         <div class="main-header">
             <h1>🚀 Jesse+ AI增强量化交易系统</h1>
-            <p>专业级量化交易平台 | AI驱动策略优化 | 实时风险监控</p>
+            <p>智能策略进化 • 实时市场监控 • 多交易所套利</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1722,8 +1837,12 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
             
             exchange = st.selectbox("交易所", ["Binance", "OKX", "Bybit", "Gate.io"])
-            api_key = st.text_input("API Key", type="password")
-            api_secret = st.text_input("API Secret", type="password")
+            
+            # 使用Streamlit的密码输入框，但添加表单包装
+            st.markdown('<form>', unsafe_allow_html=True)
+            api_key = st.text_input("API Key", type="password", key="api_key_input")
+            api_secret = st.text_input("API Secret", type="password", key="api_secret_input")
+            st.markdown('</form>', unsafe_allow_html=True)
         
         with col2:
             st.markdown("""

@@ -6,7 +6,6 @@ Web界面启动脚本
 
 import sys
 import os
-import subprocess
 from pathlib import Path
 
 def main():
@@ -29,21 +28,25 @@ def main():
     print("✅ 启动完整的AI增强量化交易系统界面...")
     print("🌐 访问地址: http://0.0.0.0:8060")
     
-    # 启动streamlit应用，添加WebSocket和CORS配置
+    # 设置环境变量
+    os.environ["STREAMLIT_SERVER_PORT"] = "8060"
+    os.environ["STREAMLIT_SERVER_ADDRESS"] = "0.0.0.0"
+    os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
+    os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+    
+    # 直接导入并运行streamlit
     try:
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", "web/app.py",
+        import streamlit.web.cli as stcli
+        sys.argv = [
+            "streamlit", "run", "web/app.py",
             "--server.port", "8060",
             "--server.address", "0.0.0.0",
             "--server.headless", "true",
-            "--server.enableCORS", "true",
-            "--server.enableXsrfProtection", "false",
-            "--browser.gatherUsageStats", "false",
-            "--client.showErrorDetails", "true",
-            "--runner.magicEnabled", "true"
-        ], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"❌ 启动失败: {e}")
+            "--browser.gatherUsageStats", "false"
+        ]
+        stcli.main()
+    except ImportError as e:
+        print(f"❌ 导入streamlit失败: {e}")
     except KeyboardInterrupt:
         print("\n🛑 用户中断，正在停止...")
     except Exception as e:

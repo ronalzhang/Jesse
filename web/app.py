@@ -23,13 +23,7 @@ import queue
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 导入Jesse+模块
-from jesse_core.jesse_manager import JesseManager
-from ai_modules.ai_enhancer import AIEnhancer
-from monitoring.system_monitor import SystemMonitor
-from utils.logging_manager import setup_logging, get_logger
-
-# 导入数据连接器
+# 导入数据连接器（不依赖Jesse框架）
 from .data_connector import get_data_connector
 
 # 设置页面配置
@@ -205,9 +199,10 @@ class JessePlusWebInterface:
     
     def __init__(self):
         """初始化Web界面"""
-        self.jesse_manager = JesseManager()
-        self.ai_enhancer = AIEnhancer()
-        self.system_monitor = SystemMonitor()
+        # 移除对Jesse框架的依赖
+        # self.jesse_manager = JesseManager()
+        # self.ai_enhancer = AIEnhancer()
+        # self.system_monitor = SystemMonitor()
         
         # 获取实时数据连接器
         self.data_connector = get_data_connector()
@@ -1573,7 +1568,7 @@ def main():
     except Exception as e:
         st.error(f"❌ 系统错误: {e}")
         st.info("💡 请检查系统配置和网络连接")
-        logger.error(f"Web界面运行错误: {e}")
+        print(f"Web界面运行错误: {e}")
 
 if __name__ == "__main__":
     main() 

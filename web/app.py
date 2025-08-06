@@ -18,6 +18,8 @@ import numpy as np
 from pathlib import Path
 import threading
 import queue
+import ccxt
+import requests
 
 # 添加项目根目录到Python路径
 project_root = Path(__file__).parent.parent
@@ -593,29 +595,41 @@ class JessePlusWebInterface:
             
             if refresh_button or 'price_data' not in st.session_state:
                 with st.spinner("正在获取多交易所价格数据..."):
-                    # price_data = price_collector.get_price_comparison_chart_data(selected_symbol)
-                    # st.session_state.price_data = price_data
-                    # 模拟数据生成
-                    dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=10)
-                    prices = self.data_generator.generate_price_data(10)
-                    volumes = self.data_generator.generate_volume_data(10)
-                    exchanges = ["Binance", "OKX", "Bybit", "Gate.io"]
-                    last_prices = prices
-                    bid_prices = [p * 0.999 for p in prices]
-                    ask_prices = [p * 1.001 for p in prices]
-                    high_prices = [p * 1.005 for p in prices]
-                    low_prices = [p * 0.995 for p in prices]
-                    volumes_data = volumes
+                    # 获取真实多交易所价格数据
+                    multi_prices = data_collector.get_multi_exchange_prices(selected_symbol)
                     
-                    st.session_state.price_data = {
-                        'exchanges': exchanges,
-                        'last_prices': last_prices,
-                        'bid_prices': bid_prices,
-                        'ask_prices': ask_prices,
-                        'high_prices': high_prices,
-                        'low_prices': low_prices,
-                        'volumes': volumes_data
-                    }
+                    if multi_prices:
+                        # 提取价格数据
+                        exchanges = []
+                        last_prices = []
+                        bid_prices = []
+                        ask_prices = []
+                        high_prices = []
+                        low_prices = []
+                        volumes = []
+                        
+                        for exchange_name, ticker_data in multi_prices.items():
+                            if ticker_data:
+                                exchanges.append(exchange_name.upper())
+                                last_prices.append(ticker_data['last'])
+                                bid_prices.append(ticker_data['bid'])
+                                ask_prices.append(ticker_data['ask'])
+                                high_prices.append(ticker_data['high'])
+                                low_prices.append(ticker_data['low'])
+                                volumes.append(ticker_data['volume'])
+                        
+                        st.session_state.price_data = {
+                            'exchanges': exchanges,
+                            'last_prices': last_prices,
+                            'bid_prices': bid_prices,
+                            'ask_prices': ask_prices,
+                            'high_prices': high_prices,
+                            'low_prices': low_prices,
+                            'volumes': volumes
+                        }
+                    else:
+                        st.error("❌ 无法获取多交易所价格数据")
+                        st.session_state.price_data = None
             
             price_data = st.session_state.get('price_data', {})
             
@@ -2102,6 +2116,9 @@ class JessePlusWebInterface:
         st.subheader("📈 市场数据")
         col1, col2 = st.columns(2)
         
+        # 初始化真实数据收集器
+        data_collector = RealDataCollector()
+        
         with col1:
             st.markdown("""
             <div class="chart-container">
@@ -2109,38 +2126,54 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            # 使用当前时间生成实时价格数据
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=7)  # 最近7天数据
-            dates = pd.date_range(start=start_date, end=end_date, periods=100)
-            prices = self.data_generator.generate_price_data(100)
+            # 获取真实价格数据
+            price_data = data_collector.get_real_price_data('BTC/USDT', 'binance', '1h', 100)
             
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=dates, y=prices,
-                mode='lines',
-                name='BTC/USDT',
-                line=dict(color='#00ff88', width=2)
-            ))
-            
-            # 添加移动平均线
-            ma_20 = pd.Series(prices).rolling(window=20).mean()
-            fig.add_trace(go.Scatter(
-                x=dates, y=ma_20,
-                mode='lines',
-                name='MA20',
-                line=dict(color='#ff8800', width=1, dash='dash')
-            ))
-            
-            fig.update_layout(
-                title="BTC/USDT 价格走势 (最近7天)",
-                xaxis_title="时间",
-                yaxis_title="价格 (USDT)",
-                height=400,
-                template="plotly_dark",
-                showlegend=True
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            if price_data is not None and not price_data.empty:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=price_data['timestamp'],
+                    y=price_data['close'],
+                    mode='lines',
+                    name='BTC/USDT',
+                    line=dict(color='#00ff88', width=2)
+                ))
+                
+                # 添加移动平均线
+                ma_20 = price_data['close'].rolling(window=20).mean()
+                fig.add_trace(go.Scatter(
+                    x=price_data['timestamp'],
+                    y=ma_20,
+                    mode='lines',
+                    name='MA20',
+                    line=dict(color='#ff8800', width=1, dash='dash')
+                ))
+                
+                fig.update_layout(
+                    title="BTC/USDT 价格走势 (真实数据)",
+                    xaxis_title="时间",
+                    yaxis_title="价格 (USDT)",
+                    height=400,
+                    template="plotly_dark",
+                    showlegend=True
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # 显示当前价格信息
+                latest_price = price_data['close'].iloc[-1]
+                price_change = price_data['close'].iloc[-1] - price_data['close'].iloc[-2]
+                price_change_pct = (price_change / price_data['close'].iloc[-2]) * 100
+                
+                st.markdown(f"""
+                <div class="metric-card {'success-metric' if price_change >= 0 else 'danger-metric'}">
+                    <h3>当前价格</h3>
+                    <h2>${latest_price:,.2f}</h2>
+                    <p>{'📈' if price_change >= 0 else '📉'} {price_change:+.2f} ({price_change_pct:+.2f}%)</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.error("❌ 无法获取真实价格数据")
+                st.info("💡 请检查网络连接和API配置")
         
         with col2:
             st.markdown("""
@@ -2149,109 +2182,38 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            volumes = self.data_generator.generate_volume_data(100)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=dates, y=volumes,
-                name='交易量',
-                marker_color='#ff8800'
-            ))
-            fig.update_layout(
-                title="24小时交易量",
-                xaxis_title="时间",
-                yaxis_title="交易量",
-                height=400,
-                template="plotly_dark"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # 策略性能 - 增强版
-        st.subheader("🎯 策略性能")
-        
-        # 策略性能表格
-        performance_data = {
-            "策略": ["AI增强策略", "移动平均线策略", "RSI策略", "MACD策略", "布林带策略", "套利策略"],
-            "收益率": [2.5, 1.8, 1.2, 0.9, 1.5, 1.9],
-            "胜率": [68, 62, 58, 55, 60, 65],
-            "最大回撤": [3.2, 4.1, 5.8, 6.2, 4.5, 3.8],
-            "夏普比率": [1.8, 1.5, 1.2, 0.9, 1.4, 1.6],
-            "状态": ["活跃", "活跃", "活跃", "暂停", "活跃", "活跃"]
-        }
-        
-        df_performance = pd.DataFrame(performance_data)
-        st.dataframe(df_performance, use_container_width=True)
-        
-        # 策略性能对比图表
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # 收益率对比
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=performance_data["策略"],
-                y=performance_data["收益率"],
-                name='收益率',
-                marker_color='#00ff88'
-            ))
-            fig.update_layout(
-                title="策略收益率对比",
-                xaxis_title="策略",
-                yaxis_title="收益率 (%)",
-                height=300,
-                template="plotly_dark"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # 胜率对比
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=performance_data["策略"],
-                y=performance_data["胜率"],
-                name='胜率',
-                marker_color='#3b82f6'
-            ))
-            fig.update_layout(
-                title="策略胜率对比",
-                xaxis_title="策略",
-                yaxis_title="胜率 (%)",
-                height=300,
-                template="plotly_dark"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # 实时交易信号
-        st.subheader("📡 实时交易信号")
-        
-        # 模拟实时信号
-        signals = [
-            {"时间": "14:30:15", "交易对": "BTC/USDT", "信号": "买入", "价格": "$43,250", "置信度": "78%", "策略": "AI增强策略"},
-            {"时间": "14:28:42", "交易对": "ETH/USDT", "信号": "卖出", "价格": "$2,680", "置信度": "82%", "策略": "RSI策略"},
-            {"时间": "14:25:18", "交易对": "BNB/USDT", "信号": "持有", "价格": "$320", "置信度": "65%", "策略": "移动平均线策略"},
-            {"时间": "14:22:33", "交易对": "ADA/USDT", "信号": "买入", "价格": "$0.52", "置信度": "75%", "策略": "MACD策略"}
-        ]
-        
-        for signal in signals:
-            col1, col2, col3, col4, col5, col6 = st.columns(6)
-            with col1:
-                st.write(signal["时间"])
-            with col2:
-                st.write(signal["交易对"])
-            with col3:
-                color = "success" if signal["信号"] == "买入" else "danger" if signal["信号"] == "卖出" else "warning"
+            if price_data is not None and not price_data.empty:
+                fig = go.Figure()
+                fig.add_trace(go.Bar(
+                    x=price_data['timestamp'],
+                    y=price_data['volume'],
+                    name='交易量',
+                    marker_color='#ff8800'
+                ))
+                fig.update_layout(
+                    title="24小时交易量",
+                    xaxis_title="时间",
+                    yaxis_title="交易量",
+                    height=400,
+                    template="plotly_dark"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # 显示交易量统计
+                total_volume = price_data['volume'].sum()
+                avg_volume = price_data['volume'].mean()
+                
                 st.markdown(f"""
-                <div class="metric-card {color}-metric">
-                    <h4>{signal["信号"]}</h4>
+                <div class="metric-card info-metric">
+                    <h3>交易量统计</h3>
+                    <h2>{total_volume:,.0f}</h2>
+                    <p>总交易量</p>
+                    <small>平均: {avg_volume:,.0f}</small>
                 </div>
                 """, unsafe_allow_html=True)
-            with col4:
-                st.write(signal["价格"])
-            with col5:
-                st.write(signal["置信度"])
-            with col6:
-                st.write(signal["策略"])
-
+            else:
+                st.error("❌ 无法获取交易量数据")
+    
     def render_risk_control(self):
         """渲染风险控制"""
         st.subheader("🛡️ 风险控制监控")
@@ -2689,8 +2651,108 @@ class JessePlusWebInterface:
                 with col4:
                     st.write(suggestion["预期效果"])
 
+class RealDataCollector:
+    """真实数据收集器"""
+    
+    def __init__(self):
+        self.exchanges = {}
+        self.last_update = {}
+        self.cache_duration = 60  # 缓存60秒
+        
+    def initialize_exchange(self, exchange_name):
+        """初始化交易所连接"""
+        try:
+            if exchange_name not in self.exchanges:
+                exchange_class = getattr(ccxt, exchange_name)
+                exchange = exchange_class({
+                    'enableRateLimit': True,
+                    'timeout': 30000
+                })
+                self.exchanges[exchange_name] = exchange
+                self.last_update[exchange_name] = 0
+                return True
+        except Exception as e:
+            st.error(f"❌ 初始化交易所 {exchange_name} 失败: {e}")
+            return False
+    
+    def get_real_price_data(self, symbol='BTC/USDT', exchange_name='binance', timeframe='1h', limit=100):
+        """获取真实价格数据"""
+        try:
+            # 检查缓存
+            cache_key = f"{exchange_name}_{symbol}_{timeframe}"
+            current_time = time.time()
+            
+            if cache_key in self.last_update:
+                if current_time - self.last_update[cache_key] < self.cache_duration:
+                    return None  # 使用缓存数据
+            
+            # 初始化交易所
+            if not self.initialize_exchange(exchange_name):
+                return None
+            
+            exchange = self.exchanges[exchange_name]
+            
+            # 获取OHLCV数据
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+            
+            if not ohlcv:
+                return None
+            
+            # 转换为DataFrame
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            
+            # 更新缓存时间
+            self.last_update[cache_key] = current_time
+            
+            return df
+            
+        except Exception as e:
+            st.error(f"❌ 获取 {exchange_name} {symbol} 数据失败: {e}")
+            return None
+    
+    def get_real_ticker(self, symbol='BTC/USDT', exchange_name='binance'):
+        """获取真实ticker数据"""
+        try:
+            if not self.initialize_exchange(exchange_name):
+                return None
+            
+            exchange = self.exchanges[exchange_name]
+            ticker = exchange.fetch_ticker(symbol)
+            
+            return {
+                'last': ticker['last'],
+                'bid': ticker['bid'],
+                'ask': ticker['ask'],
+                'high': ticker['high'],
+                'low': ticker['low'],
+                'volume': ticker['baseVolume'],
+                'change': ticker['percentage'],
+                'timestamp': datetime.fromtimestamp(ticker['timestamp'] / 1000)
+            }
+            
+        except Exception as e:
+            st.error(f"❌ 获取 {exchange_name} {symbol} ticker失败: {e}")
+            return None
+    
+    def get_multi_exchange_prices(self, symbol='BTC/USDT'):
+        """获取多交易所价格"""
+        exchanges = ['binance', 'okx', 'bybit', 'gate', 'kucoin']
+        prices = {}
+        
+        for exchange_name in exchanges:
+            try:
+                ticker = self.get_real_ticker(symbol, exchange_name)
+                if ticker:
+                    prices[exchange_name] = ticker
+            except Exception as e:
+                st.warning(f"⚠️ 获取 {exchange_name} 数据失败: {e}")
+                prices[exchange_name] = None
+        
+        return prices
+
 class DataGenerator:
-    """数据生成器类"""
+    """数据生成器类 - 保留作为备用"""
     
     def __init__(self):
         self.base_price = 42000

@@ -3,6 +3,8 @@
 """
 
 import os
+import json
+from pathlib import Path
 from typing import Dict, Any
 
 class ExchangeConfig:
@@ -13,32 +15,67 @@ class ExchangeConfig:
         'binance', 'okx', 'bitget'
     ]
     
-    # 交易所API配置 - 高频交易专用
-    EXCHANGE_CONFIGS = {
-        'binance': {
-            'api_key': os.getenv('BINANCE_API_KEY', ''),
-            'secret_key': os.getenv('BINANCE_SECRET_KEY', ''),
-            'sandbox': os.getenv('BINANCE_SANDBOX', 'false').lower() == 'true',
-            'rate_limit': 1200,  # 每分钟请求限制
-            'timeout': 30
-        },
-        'okx': {
-            'api_key': os.getenv('OKX_API_KEY', ''),
-            'secret_key': os.getenv('OKX_SECRET_KEY', ''),
-            'passphrase': os.getenv('OKX_PASSPHRASE', ''),
-            'sandbox': os.getenv('OKX_SANDBOX', 'false').lower() == 'true',
-            'rate_limit': 600,
-            'timeout': 30
-        },
-        'bitget': {
-            'api_key': os.getenv('BITGET_API_KEY', ''),
-            'secret_key': os.getenv('BITGET_SECRET_KEY', ''),
-            'passphrase': os.getenv('BITGET_PASSPHRASE', ''),
-            'sandbox': os.getenv('BITGET_SANDBOX', 'false').lower() == 'true',
-            'rate_limit': 600,
-            'timeout': 30
-        }
-    }
+    @classmethod
+    def _load_api_keys_from_file(cls) -> Dict[str, Any]:
+        """从api_keys.json文件加载API配置"""
+        try:
+            api_keys_file = Path('api_keys.json')
+            if api_keys_file.exists():
+                with open(api_keys_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                print("⚠️ API密钥文件不存在: api_keys.json")
+                return {}
+        except Exception as e:
+            print(f"❌ 加载API密钥配置失败: {e}")
+            return {}
+    
+    @classmethod
+    def get_exchange_config(cls, exchange: str) -> Dict[str, Any]:
+        """获取指定交易所的配置"""
+        if exchange not in cls.SUPPORTED_EXCHANGES:
+            raise ValueError(f"不支持的交易所: {exchange}")
+        
+        # 首先尝试从api_keys.json文件读取
+        api_keys_config = cls._load_api_keys_from_file()
+        exchange_key = exchange.lower()
+        
+        if api_keys_config and exchange_key in api_keys_config.get('exchanges', {}):
+            # 从文件读取配置
+            config = api_keys_config['exchanges'][exchange_key].copy()
+            # 确保有默认值
+            config.setdefault('sandbox', False)
+            config.setdefault('rate_limit', 600)
+            config.setdefault('timeout', 30)
+            return config
+        else:
+            # 从环境变量读取配置（兼容旧方式）
+            env_config = {
+                'binance': {
+                    'api_key': os.getenv('BINANCE_API_KEY', ''),
+                    'secret_key': os.getenv('BINANCE_SECRET_KEY', ''),
+                    'sandbox': os.getenv('BINANCE_SANDBOX', 'false').lower() == 'true',
+                    'rate_limit': 1200,
+                    'timeout': 30
+                },
+                'okx': {
+                    'api_key': os.getenv('OKX_API_KEY', ''),
+                    'secret_key': os.getenv('OKX_SECRET_KEY', ''),
+                    'passphrase': os.getenv('OKX_PASSPHRASE', ''),
+                    'sandbox': os.getenv('OKX_SANDBOX', 'false').lower() == 'true',
+                    'rate_limit': 600,
+                    'timeout': 30
+                },
+                'bitget': {
+                    'api_key': os.getenv('BITGET_API_KEY', ''),
+                    'secret_key': os.getenv('BITGET_SECRET_KEY', ''),
+                    'passphrase': os.getenv('BITGET_PASSPHRASE', ''),
+                    'sandbox': os.getenv('BITGET_SANDBOX', 'false').lower() == 'true',
+                    'rate_limit': 600,
+                    'timeout': 30
+                }
+            }
+            return env_config.get(exchange_key, {}).copy()
     
     # 交易对配置 - 高频交易专用
     TRADING_PAIRS = {
@@ -54,13 +91,6 @@ class ExchangeConfig:
     HIGH_FREQ_TIMEFRAMES = ['1m', '5m', '15m']
     SCALPING_TIMEFRAMES = ['1m', '5m']
     ARBITRAGE_TIMEFRAMES = ['1m', '5m']
-    
-    @classmethod
-    def get_exchange_config(cls, exchange: str) -> Dict[str, Any]:
-        """获取指定交易所的配置"""
-        if exchange not in cls.EXCHANGE_CONFIGS:
-            raise ValueError(f"不支持的交易所: {exchange}")
-        return cls.EXCHANGE_CONFIGS[exchange].copy()
     
     @classmethod
     def get_trading_pairs(cls, exchange: str) -> list:

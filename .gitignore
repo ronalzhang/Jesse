@@ -140,4 +140,6 @@ data/reviews/
 *.pfx
 
 # API密钥文件
-API-KEY.md 
+API-KEY.md
+api_keys.json
+sync_api_config.py 

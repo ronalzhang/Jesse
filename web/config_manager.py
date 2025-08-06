@@ -32,6 +32,9 @@ class ConfigManager:
         # 加载当前配置
         self.current_config = self.load_config()
         
+        # 加载API密钥配置
+        self.api_keys_config = self._load_api_keys()
+        
         self.logger = logging.getLogger(__name__)
     
     def _init_database(self):
@@ -292,3 +295,33 @@ class ConfigManager:
         except Exception as e:
             self.logger.error(f"❌ 获取配置历史失败: {e}")
             return [] 
+    
+    def _load_api_keys(self) -> Dict[str, Any]:
+        """加载API密钥配置"""
+        try:
+            api_keys_file = Path('api_keys.json')
+            if api_keys_file.exists():
+                with open(api_keys_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                self.logger.warning("⚠️ API密钥文件不存在: api_keys.json")
+                return {}
+        except Exception as e:
+            self.logger.error(f"❌ 加载API密钥配置失败: {e}")
+            return {}
+    
+    def get_exchange_api_config(self, exchange_name: str) -> Dict[str, Any]:
+        """获取指定交易所的API配置"""
+        try:
+            if not self.api_keys_config:
+                self.api_keys_config = self._load_api_keys()
+            
+            exchange_key = exchange_name.lower()
+            if exchange_key in self.api_keys_config.get('exchanges', {}):
+                return self.api_keys_config['exchanges'][exchange_key]
+            else:
+                self.logger.warning(f"⚠️ 未找到交易所 {exchange_name} 的API配置")
+                return {}
+        except Exception as e:
+            self.logger.error(f"❌ 获取交易所API配置失败: {e}")
+            return {} 

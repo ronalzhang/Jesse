@@ -124,21 +124,80 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
     
-    /* 标签页样式 */
+    /* 标签页样式 - 优化为平均分配宽度 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 0 !important;
+        display: flex !important;
+        width: 100% !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
     .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        border-radius: 8px 8px 0 0;
-        color: #f8fafc;
-        border: 1px solid #475569;
+        flex: 1 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        color: #f8fafc !important;
+        border: none !important;
+        border-bottom: 3px solid transparent !important;
+        padding: 12px 8px !important;
+        margin: 0 !important;
+        text-align: center !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        color: white;
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+        color: white !important;
+        border-bottom: 3px solid #60a5fa !important;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    .stTabs [aria-selected="true"]:hover {
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
+    }
+    
+    /* 标签页内容区域样式 */
+    .stTabs [data-baseweb="tab-panel"] {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-radius: 0 0 8px 8px !important;
+        padding: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-top: none !important;
+    }
+    
+    /* 响应式设计 - 小屏幕时标签页换行 */
+    @media (max-width: 768px) {
+        .stTabs [data-baseweb="tab-list"] {
+            flex-wrap: wrap !important;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            flex: 1 1 calc(50% - 4px) !important;
+            min-width: 120px !important;
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stTabs [data-baseweb="tab"] {
+            flex: 1 1 calc(33.333% - 4px) !important;
+            font-size: 11px !important;
+            padding: 6px 2px !important;
+        }
     }
     
     /* 数据表格样式 */
@@ -2061,10 +2120,10 @@ class JessePlusWebInterface:
                                   key="exchange")
             
             # 使用Streamlit的密码输入框，但添加表单包装
-            st.markdown('<form>', unsafe_allow_html=True)
-            api_key = st.text_input("API Key", type="password", value=config.get('api_key', ''), key="api_key_input")
-            api_secret = st.text_input("API Secret", type="password", value=config.get('api_secret', ''), key="api_secret_input")
-            st.markdown('</form>', unsafe_allow_html=True)
+            with st.form("api_config_form"):
+                api_key = st.text_input("API Key", type="password", value=config.get('api_key', ''), key="api_key_input")
+                api_secret = st.text_input("API Secret", type="password", value=config.get('api_secret', ''), key="api_secret_input")
+                st.form_submit_button("保存API配置")
         
         with col2:
             st.markdown("""
@@ -2152,13 +2211,40 @@ class JessePlusWebInterface:
             st.metric("数据库连接", "✅ 正常" if config.get('db_host') else "❌ 未配置")
         
         with col2:
-            st.metric("交易所API", "✅ 已配置" if config.get('api_key') else "❌ 未配置")
+            # 检查API配置状态
+            api_config_status = "❌ 未配置"
+            if config.get('api_key') or self.config_manager.api_keys_config:
+                api_config_status = "✅ 已配置"
+            st.metric("交易所API", api_config_status)
         
         with col3:
             st.metric("AI模型", "✅ 已配置" if config.get('lstm_units') else "❌ 未配置")
         
         with col4:
             st.metric("风险控制", "✅ 已配置" if config.get('max_drawdown') else "❌ 未配置")
+        
+        # 显示API配置详情
+        if self.config_manager.api_keys_config:
+            st.markdown("""
+            <div class="chart-container">
+                <h4>API配置详情</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            api_configs = self.config_manager.api_keys_config.get('exchanges', {})
+            if api_configs:
+                for exchange_name, exchange_config in api_configs.items():
+                    with st.expander(f"📊 {exchange_name.upper()} 配置"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"**API Key**: {'✅ 已配置' if exchange_config.get('api_key') else '❌ 未配置'}")
+                            st.write(f"**Secret Key**: {'✅ 已配置' if exchange_config.get('secret_key') else '❌ 未配置'}")
+                        with col2:
+                            if exchange_config.get('passphrase'):
+                                st.write(f"**Passphrase**: ✅ 已配置")
+                            st.write(f"**Sandbox**: {'✅ 是' if exchange_config.get('sandbox') else '❌ 否'}")
+            else:
+                st.info("📝 未找到API配置信息")
     
     def render_logs(self):
         """渲染日志"""

@@ -176,8 +176,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 设置日志
-setup_logging()
-logger = get_logger('jesse_plus_web')
+# setup_logging()
+# logger = get_logger('jesse_plus_web')
 
 # 全局状态管理
 if 'system_status' not in st.session_state:

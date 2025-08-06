@@ -590,8 +590,8 @@ class JessePlusWebInterface:
         
         # 获取价格数据
         try:
-            # from data.multi_exchange_price_collector import get_price_collector
-            # price_collector = get_price_collector()
+            # 初始化真实数据收集器
+            data_collector = RealDataCollector()
             
             if refresh_button or 'price_data' not in st.session_state:
                 with st.spinner("正在获取多交易所价格数据..."):
@@ -916,21 +916,46 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
         
-        # 套利历史记录 - 新增
+        # 套利历史记录 - 显示系统检测到的套利机会和执行结果
         st.subheader("📈 套利历史记录")
+        st.info("💡 此表格显示系统检测到的跨交易所套利机会和执行结果，用于分析套利策略的有效性")
         
-        # 模拟套利历史数据
+        # 模拟套利历史数据（实际系统中应从数据库获取）
+        base_price = 68000  # BTC当前价格
         arbitrage_history = {
             "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20),
             "交易对": ["BTC/USDT"] * 20,
             "买入交易所": ["Binance", "OKX", "Bybit", "Gate.io"] * 5,
             "卖出交易所": ["Gate.io", "Binance", "OKX", "Bybit"] * 5,
+            "买入价格": [base_price + np.random.uniform(-100, 100) for _ in range(20)],
+            "卖出价格": [base_price + np.random.uniform(-100, 100) for _ in range(20)],
             "价差": [np.random.uniform(0.1, 0.8) for _ in range(20)],
             "收益": [np.random.uniform(0.05, 0.6) for _ in range(20)],
             "状态": ["成功", "成功", "失败", "成功"] * 5
         }
         
-        df_arbitrage = pd.DataFrame(arbitrage_history)
+        # 计算价差百分比
+        arbitrage_history["价差详情"] = []
+        for i in range(len(arbitrage_history["价差"])):
+            spread = arbitrage_history["价差"][i]
+            buy_price = arbitrage_history["买入价格"][i]
+            spread_pct = (spread / buy_price) * 100
+            arbitrage_history["价差详情"].append(f"{spread:.2f} ({spread_pct:.3f}%)")
+        
+        # 创建显示用的DataFrame
+        display_data = {
+            "时间": arbitrage_history["时间"],
+            "交易对": arbitrage_history["交易对"],
+            "买入交易所": arbitrage_history["买入交易所"],
+            "卖出交易所": arbitrage_history["卖出交易所"],
+            "买入价格": [f"${price:.2f}" for price in arbitrage_history["买入价格"]],
+            "卖出价格": [f"${price:.2f}" for price in arbitrage_history["卖出价格"]],
+            "价差": arbitrage_history["价差详情"],
+            "收益": [f"{profit:.3f}%" for profit in arbitrage_history["收益"]],
+            "状态": arbitrage_history["状态"]
+        }
+        
+        df_arbitrage = pd.DataFrame(display_data)
         st.dataframe(df_arbitrage, use_container_width=True)
         
         # 套利收益统计

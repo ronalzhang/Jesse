@@ -241,12 +241,22 @@ class JessePlusWebInterface:
         self.data_generator = DataGenerator()
         
         # 配置管理器
-        from config_manager import ConfigManager
-        self.config_manager = ConfigManager()
+        try:
+            from config_manager import ConfigManager
+            self.config_manager = ConfigManager()
+        except Exception as e:
+            st.error(f"❌ 配置管理器初始化失败: {e}")
+            # 创建一个简单的配置管理器作为备用
+            self.config_manager = None
         
         # 实时数据管理器
-        from real_time_data_manager import RealTimeDataManager
-        self.real_time_data = RealTimeDataManager()
+        try:
+            from real_time_data_manager import RealTimeDataManager
+            self.real_time_data = RealTimeDataManager()
+        except Exception as e:
+            st.error(f"❌ 实时数据管理器初始化失败: {e}")
+            # 创建一个简单的数据管理器作为备用
+            self.real_time_data = None
         
         # 初始化性能指标
         self.performance_metrics = {
@@ -455,7 +465,10 @@ class JessePlusWebInterface:
         st.sidebar.markdown("### 📊 监控设置")
         
         # 从配置管理器获取设置
-        config = self.config_manager.get_all_config()
+        if self.config_manager is not None:
+            config = self.config_manager.get_all_config()
+        else:
+            config = {}
         
         show_ai_process = st.sidebar.checkbox(
             "显示AI分析过程", 
@@ -483,11 +496,14 @@ class JessePlusWebInterface:
         
         # 保存监控设置
         if st.sidebar.button("💾 保存设置", use_container_width=True):
-            self.config_manager.update_config('show_ai_process', show_ai_process)
-            self.config_manager.update_config('show_decision_process', show_decision_process)
-            self.config_manager.update_config('show_strategy_evolution', show_strategy_evolution)
-            self.config_manager.update_config('auto_refresh', auto_refresh)
-            st.sidebar.success("✅ 设置已保存")
+            if self.config_manager is not None:
+                self.config_manager.update_config('show_ai_process', show_ai_process)
+                self.config_manager.update_config('show_decision_process', show_decision_process)
+                self.config_manager.update_config('show_strategy_evolution', show_strategy_evolution)
+                self.config_manager.update_config('auto_refresh', auto_refresh)
+                st.sidebar.success("✅ 设置已保存")
+            else:
+                st.sidebar.error("❌ 配置管理器不可用")
         
         # 策略管理
         st.sidebar.markdown("### 🎯 策略管理")
@@ -506,8 +522,11 @@ class JessePlusWebInterface:
         
         # 保存策略设置
         if st.sidebar.button("💾 保存策略", use_container_width=True):
-            self.config_manager.update_config('active_strategies', active_strategies)
-            st.sidebar.success("✅ 策略设置已保存")
+            if self.config_manager is not None:
+                self.config_manager.update_config('active_strategies', active_strategies)
+                st.sidebar.success("✅ 策略设置已保存")
+            else:
+                st.sidebar.error("❌ 配置管理器不可用")
         
         # AI配置
         st.sidebar.markdown("### 🤖 AI配置")
@@ -537,9 +556,12 @@ class JessePlusWebInterface:
         
         # 保存AI配置
         if st.sidebar.button("💾 保存AI配置", use_container_width=True):
-            self.config_manager.update_config('prediction_horizon', prediction_horizon)
-            self.config_manager.update_config('confidence_threshold', confidence_threshold)
-            st.sidebar.success("✅ AI配置已保存")
+            if self.config_manager is not None:
+                self.config_manager.update_config('prediction_horizon', prediction_horizon)
+                self.config_manager.update_config('confidence_threshold', confidence_threshold)
+                st.sidebar.success("✅ AI配置已保存")
+            else:
+                st.sidebar.error("❌ 配置管理器不可用")
         
         # 风险控制
         st.sidebar.markdown("### 🛡️ 风险控制")
@@ -562,24 +584,35 @@ class JessePlusWebInterface:
         
         # 保存风险控制设置
         if st.sidebar.button("💾 保存风险设置", use_container_width=True):
-            self.config_manager.update_config('max_position_size', float(max_position))
-            self.config_manager.update_config('stop_loss_threshold', float(stop_loss))
-            st.sidebar.success("✅ 风险设置已保存")
+            if self.config_manager is not None:
+                self.config_manager.update_config('max_position_size', float(max_position))
+                self.config_manager.update_config('stop_loss_threshold', float(stop_loss))
+                st.sidebar.success("✅ 风险设置已保存")
+            else:
+                st.sidebar.error("❌ 配置管理器不可用")
         
         # 实时状态显示
         st.sidebar.markdown("### 📈 实时状态")
         
         # 获取真实数据
         try:
-            # 获取BTC价格
-            btc_price_data = self.real_time_data.get_price_data('BTC/USDT', 'binance')
-            
-            if btc_price_data:
-                st.sidebar.metric(
-                    "BTC价格", 
-                    f"${btc_price_data['last']:,.2f}",
-                    f"{btc_price_data['change']:.2f}%"
-                )
+            if self.real_time_data is not None:
+                # 获取BTC价格
+                btc_price_data = self.real_time_data.get_price_data('BTC/USDT', 'binance')
+                
+                if btc_price_data:
+                    st.sidebar.metric(
+                        "BTC价格", 
+                        f"${btc_price_data['last']:,.2f}",
+                        f"{btc_price_data['change']:.2f}%"
+                    )
+                else:
+                    # 使用模拟数据
+                    st.sidebar.metric(
+                        "BTC价格", 
+                        "$42,150.00",
+                        "+2.5%"
+                    )
             else:
                 # 使用模拟数据
                 st.sidebar.metric(
@@ -596,7 +629,10 @@ class JessePlusWebInterface:
             )
         
         # 获取系统状态
-        system_status = self.real_time_data.get_system_status()
+        if self.real_time_data is not None:
+            system_status = self.real_time_data.get_system_status()
+        else:
+            system_status = {}
         
         # 系统状态
         st.sidebar.metric(
@@ -1992,6 +2028,11 @@ class JessePlusWebInterface:
     def render_system_config(self):
         """渲染系统配置"""
         st.subheader("⚙️ 系统配置")
+        
+        # 检查配置管理器是否可用
+        if self.config_manager is None:
+            st.error("❌ 配置管理器不可用，无法加载配置")
+            return
         
         # 加载当前配置
         config = self.config_manager.get_all_config()

@@ -121,11 +121,23 @@ class CompleteAutoEvolutionSystem:
             return False
     
     def start_web_interface(self):
-        """启动Web界面"""
-        self.logger.info("🌐 启动Web界面...")
+        """启动Web界面（可选，如果已有Web界面则跳过）"""
+        self.logger.info("🌐 检查Web界面...")
         
         try:
-            # 启动Web界面
+            # 检查是否已有Web界面在运行
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
+                    if 'streamlit' in cmdline and 'web/app.py' in cmdline:
+                        self.logger.info(f"✅ 发现现有Web界面进程 (PID: {proc.pid})，跳过启动新Web界面")
+                        self.web_process = None
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            # 如果没有现有Web界面，则启动新的
+            self.logger.info("🌐 启动新的Web界面...")
             self.web_process = subprocess.Popen([
                 sys.executable, "-m", "streamlit", "run", "web/app.py",
                 "--server.port", "8060",

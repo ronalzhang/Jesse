@@ -596,7 +596,7 @@ class JessePlusWebInterface:
                     # price_data = price_collector.get_price_comparison_chart_data(selected_symbol)
                     # st.session_state.price_data = price_data
                     # 模拟数据生成
-                    dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=10, freq='H')
+                    dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=10)
                     prices = self.data_generator.generate_price_data(10)
                     volumes = self.data_generator.generate_volume_data(10)
                     exchanges = ["Binance", "OKX", "Bybit", "Gate.io"]
@@ -907,7 +907,7 @@ class JessePlusWebInterface:
         
         # 模拟套利历史数据
         arbitrage_history = {
-            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20, freq='H'),
+            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20),
             "交易对": ["BTC/USDT"] * 20,
             "买入交易所": ["Binance", "OKX", "Bybit", "Gate.io"] * 5,
             "卖出交易所": ["Gate.io", "Binance", "OKX", "Bybit"] * 5,
@@ -1208,7 +1208,7 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
             
             # 模拟预测数据
-            dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=24, freq='H')
+            dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=24)
             actual_prices = [42000 + i * 50 + np.random.normal(0, 100) for i in range(24)]
             predicted_prices = [p + np.random.normal(0, 200) for p in actual_prices]
             confidence_intervals = [np.random.uniform(0.6, 0.9) for _ in range(24)]
@@ -1245,7 +1245,7 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            accuracy_dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
+            accuracy_dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30)
             accuracy_rates = [65 + np.random.normal(0, 5) for _ in range(30)]
             
             fig = go.Figure()
@@ -1421,7 +1421,7 @@ class JessePlusWebInterface:
         st.subheader("📈 历史决策记录")
         
         decision_history = {
-            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=10, freq='H'),
+            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=10),
             "信号": ["买入", "卖出", "买入", "持有", "买入", "卖出", "买入", "持有", "买入", "卖出"],
             "价格": [42000, 43500, 42800, 43200, 42900, 44100, 43800, 44000, 44200, 44800],
             "收益": [2.1, -1.5, 3.2, 0.0, 2.8, 1.9, 1.2, 0.0, 1.5, 2.3],
@@ -1760,7 +1760,7 @@ class JessePlusWebInterface:
         
         # 模拟交易记录
         trading_records = {
-            "时间": pd.date_range(start='2024-01-01', periods=20, freq='H'),
+            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20),
             "交易对": ["BTC/USDT"] * 20,
             "方向": ["买入", "卖出"] * 10,
             "价格": [42000 + i * 50 + np.random.normal(0, 100) for i in range(20)],
@@ -2112,7 +2112,7 @@ class JessePlusWebInterface:
             # 使用当前时间生成实时价格数据
             end_date = datetime.now()
             start_date = end_date - timedelta(days=7)  # 最近7天数据
-            dates = pd.date_range(start=start_date, end=end_date, periods=100, freq='H')
+            dates = pd.date_range(start=start_date, end=end_date, periods=100)
             prices = self.data_generator.generate_price_data(100)
             
             fig = go.Figure()
@@ -2364,7 +2364,7 @@ class JessePlusWebInterface:
         
         with col1:
             # 夏普比率趋势
-            dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
+            dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30)
             sharpe_ratios = [1.2 + np.random.normal(0, 0.2) for _ in range(30)]
             
             fig = go.Figure()

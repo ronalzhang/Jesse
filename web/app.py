@@ -761,497 +761,177 @@ class JessePlusWebInterface:
     
 
     def render_multi_exchange_prices(self):
-        """渲染多交易所价格对比"""
-        st.subheader("💰 多交易所实时价格对比")
+        """渲染多交易所价格标签页"""
+        st.header("💰 多交易所价格监控")
         
-        # 价格监控概览
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>监控交易所</h3>
-                <h2>4</h2>
-                <p>活跃交易所</p>
-                <small>Binance, OKX, Bybit, Gate.io</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div class="metric-card success-metric">
-                <h3>平均价差</h3>
-                <h2>0.15%</h2>
-                <p>套利机会</p>
-                <small>目标: > 0.1%</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div class="metric-card warning-metric">
-                <h3>最大价差</h3>
-                <h2>0.85%</h2>
-                <p>套利机会</p>
-                <small>Binance vs Gate.io</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>更新频率</h3>
-                <h2>5s</h2>
-                <p>实时更新</p>
-                <small>延迟: 0.2s</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 币种选择
-        col1, col2 = st.columns(2)
-        with col1:
-            selected_symbol = st.selectbox(
-                "选择币种",
-                ["BTC/USDT", "ETH/USDT", "BNB/USDT", "ADA/USDT", "SOL/USDT", 
-                 "XRP/USDT", "DOT/USDT", "DOGE/USDT", "AVAX/USDT", "MATIC/USDT"],
-                index=0
-            )
-        with col2:
-            refresh_button = st.button("🔄 刷新价格", key="refresh_prices", use_container_width=True)
-        
-        # 获取价格数据
+        # 添加错误处理和重试机制
         try:
-            # 初始化真实数据收集器
-            data_collector = RealDataCollector()
+            # 选择交易对
+            selected_symbol = st.selectbox(
+                "选择交易对",
+                ["BTC/USDT", "ETH/USDT", "BNB/USDT", "ADA/USDT", "SOL/USDT"],
+                key="multi_symbol"
+            )
             
-            if refresh_button or 'price_data' not in st.session_state:
-                with st.spinner("正在获取多交易所价格数据..."):
-                    # 获取真实多交易所价格数据
-                    multi_prices = data_collector.get_multi_exchange_prices(selected_symbol)
-                    
-                    if multi_prices:
-                        # 提取价格数据
-                        exchanges = []
-                        last_prices = []
-                        bid_prices = []
-                        ask_prices = []
-                        high_prices = []
-                        low_prices = []
-                        volumes = []
+            # 刷新按钮
+            refresh_button = st.button("🔄 刷新数据", key="refresh_multi_prices")
+            
+            # 获取价格数据
+            try:
+                # 初始化真实数据收集器
+                data_collector = RealDataCollector()
+                
+                if refresh_button or 'price_data' not in st.session_state:
+                    with st.spinner("正在获取多交易所价格数据..."):
+                        # 获取真实多交易所价格数据
+                        multi_prices = data_collector.get_multi_exchange_prices(selected_symbol)
                         
-                        for exchange_name, ticker_data in multi_prices.items():
-                            if ticker_data and isinstance(ticker_data, dict):
-                                # 检查必要的数据字段
-                                required_fields = ['last', 'bid', 'ask', 'high', 'low', 'volume']
-                                if all(field in ticker_data and ticker_data[field] is not None for field in required_fields):
-                                    exchanges.append(exchange_name.upper())
-                                    last_prices.append(float(ticker_data['last']))
-                                    bid_prices.append(float(ticker_data['bid']))
-                                    ask_prices.append(float(ticker_data['ask']))
-                                    high_prices.append(float(ticker_data['high']))
-                                    low_prices.append(float(ticker_data['low']))
-                                    volumes.append(float(ticker_data['volume']))
-                                else:
-                                    st.warning(f"⚠️ {exchange_name} 数据不完整，跳过")
+                        if multi_prices:
+                            # 提取价格数据
+                            exchanges = []
+                            last_prices = []
+                            bid_prices = []
+                            ask_prices = []
+                            high_prices = []
+                            low_prices = []
+                            volumes = []
+                            
+                            for exchange_name, ticker_data in multi_prices.items():
+                                if ticker_data is not None:
+                                    exchanges.append(exchange_name)
+                                    last_prices.append(ticker_data.get('last', 0))
+                                    bid_prices.append(ticker_data.get('bid', 0))
+                                    ask_prices.append(ticker_data.get('ask', 0))
+                                    high_prices.append(ticker_data.get('high', 0))
+                                    low_prices.append(ticker_data.get('low', 0))
+                                    volumes.append(ticker_data.get('volume', 0))
+                            
+                            if exchanges:
+                                price_data = {
+                                    'exchanges': exchanges,
+                                    'last_prices': last_prices,
+                                    'bid_prices': bid_prices,
+                                    'ask_prices': ask_prices,
+                                    'high_prices': high_prices,
+                                    'low_prices': low_prices,
+                                    'volumes': volumes
+                                }
+                                st.session_state.price_data = price_data
                             else:
-                                st.warning(f"⚠️ {exchange_name} 数据获取失败")
-                        
-                        if exchanges:  # 确保有有效数据
-                            st.session_state.price_data = {
-                                'exchanges': exchanges,
-                                'last_prices': last_prices,
-                                'bid_prices': bid_prices,
-                                'ask_prices': ask_prices,
-                                'high_prices': high_prices,
-                                'low_prices': low_prices,
-                                'volumes': volumes
-                            }
+                                st.warning("⚠️ 无法获取有效的价格数据")
+                                return
                         else:
-                            st.error("❌ 没有获取到有效的价格数据")
-                    else:
-                        st.error("❌ 无法获取多交易所价格数据")
-            
-            price_data = st.session_state.get('price_data', {})
-            
-            if price_data and 'exchanges' in price_data:
-                # 价格对比图表 - 增强版
-                st.markdown("""
-                <div class="chart-container">
-                    <h4>多交易所价格对比</h4>
-                </div>
-                """, unsafe_allow_html=True)
+                            st.warning("⚠️ 无法获取多交易所价格数据")
+                            return
                 
-                # 创建价格对比图
-                fig = go.Figure()
-                
-                # 添加最新价格
-                fig.add_trace(go.Bar(
-                    x=price_data['exchanges'],
-                    y=price_data['last_prices'],
-                    name='最新价格',
-                    marker_color='#00ff88',
-                    text=[f"${price:.2f}" for price in price_data['last_prices']],
-                    textposition='auto'
-                ))
-                
-                # 添加买卖价差
-                fig.add_trace(go.Scatter(
-                    x=price_data['exchanges'],
-                    y=price_data['bid_prices'],
-                    mode='markers',
-                    name='买价',
-                    marker=dict(color='#ff8800', size=8)
-                ))
-                
-                fig.add_trace(go.Scatter(
-                    x=price_data['exchanges'],
-                    y=price_data['ask_prices'],
-                    mode='markers',
-                    name='卖价',
-                    marker=dict(color='#ff0088', size=8)
-                ))
-                
-                fig.update_layout(
-                    title=f"{selected_symbol} 多交易所价格对比",
-                    xaxis_title="交易所",
-                    yaxis_title="价格 (USDT)",
-                    height=500,
-                    showlegend=True,
-                    template="plotly_dark"
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # 价格详情表格 - 增强版
-                st.subheader("📋 详细价格信息")
-                
-                price_details = []
-                for i, exchange in enumerate(price_data['exchanges']):
-                    # 安全计算价差，避免除零错误
-                    bid_price = price_data['bid_prices'][i]
-                    ask_price = price_data['ask_prices'][i]
+                # 显示价格数据
+                if 'price_data' in st.session_state and st.session_state.price_data:
+                    price_data = st.session_state.price_data
                     
-                    if bid_price and bid_price > 0:
-                        spread = ((ask_price - bid_price) / bid_price) * 100
-                    else:
-                        spread = 0.0
+                    # 价格概览
+                    st.subheader("📊 价格概览")
                     
-                    price_details.append({
-                        "交易所": exchange,
-                        "最新价格": f"${price_data['last_prices'][i]:.2f}",
-                        "买价": f"${bid_price:.2f}",
-                        "卖价": f"${ask_price:.2f}",
-                        "价差": f"{spread:.3f}%",
-                        "24h最高": f"${price_data.get('high_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
-                        "24h最低": f"${price_data.get('low_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
-                        "24h成交量": f"{price_data['volumes'][i]:,.0f}",
-                        "状态": "活跃" if spread < 0.1 else "正常" if spread < 0.5 else "注意"
-                    })
-                
-                df_prices = pd.DataFrame(price_details)
-                st.dataframe(df_prices, use_container_width=True)
-                
-                # 价差分析 - 增强版
-                st.subheader("📈 价差分析")
-                
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    min_price = min(price_data['last_prices'])
-                    max_price = max(price_data['last_prices'])
-                    price_spread = max_price - min_price
-                    spread_percentage = (price_spread / min_price) * 100
-                    
-                    st.markdown(f"""
-                    <div class="metric-card info-metric">
-                        <h3>最高价</h3>
-                        <h2>${max_price:.2f}</h2>
-                        <p>交易所价格</p>
-                        <small>价差: ${price_spread:.2f}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    st.markdown(f"""
-                    <div class="metric-card info-metric">
-                        <h3>最低价</h3>
-                        <h2>${min_price:.2f}</h2>
-                        <p>交易所价格</p>
-                        <small>价差: {spread_percentage:.2f}%</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col3:
-                    color = "success" if spread_percentage > 0.1 else "warning"
-                    st.markdown(f"""
-                    <div class="metric-card {color}-metric">
-                        <h3>套利机会</h3>
-                        <h2>{spread_percentage:.2f}%</h2>
-                        <p>价差百分比</p>
-                        <small>阈值: 0.1%</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col4:
-                    # 计算平均价差
-                    spreads = []
-                    for i in range(len(price_data['exchanges'])):
-                        spread = ((price_data['ask_prices'][i] - price_data['bid_prices'][i]) / price_data['bid_prices'][i]) * 100
-                        spreads.append(spread)
-                    avg_spread = sum(spreads) / len(spreads)
-                    
-                    color = "success" if avg_spread < 0.1 else "warning" if avg_spread < 0.5 else "danger"
-                    st.markdown(f"""
-                    <div class="metric-card {color}-metric">
-                        <h3>平均价差</h3>
-                        <h2>{avg_spread:.3f}%</h2>
-                        <p>买卖价差</p>
-                        <small>流动性指标</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # 套利机会分析 - 新增
-                st.subheader("🎯 套利机会分析")
-                
-                if spread_percentage > 0.1:
-                    st.success(f"🎯 发现套利机会！价差: {spread_percentage:.2f}%")
-                    
-                    # 套利策略建议
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3 = st.columns(3)
                     
                     with col1:
-                        st.markdown("""
-                        <div class="chart-container">
-                            <h4>📊 套利策略</h4>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        arbitrage_strategies = [
-                            {"策略": "跨交易所套利", "描述": "在低价交易所买入，高价交易所卖出", "预期收益": f"{spread_percentage:.2f}%", "风险": "低"},
-                            {"策略": "三角套利", "描述": "利用三个交易所的价格差异", "预期收益": "0.5-1.0%", "风险": "中"},
-                            {"策略": "统计套利", "描述": "基于历史价差统计", "预期收益": "0.3-0.8%", "风险": "中"},
-                            {"策略": "高频套利", "描述": "快速进出获取价差", "预期收益": "0.1-0.3%", "风险": "高"}
-                        ]
-                        
-                        for strategy in arbitrage_strategies:
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.write(strategy["策略"])
-                            with col2:
-                                st.write(strategy["描述"])
-                            with col3:
-                                st.write(strategy["预期收益"])
-                            with col4:
-                                risk_color = "success" if strategy["风险"] == "低" else "warning" if strategy["风险"] == "中" else "danger"
-                                st.markdown(f"""
-                                <div class="metric-card {risk_color}-metric">
-                                    <h4>{strategy["风险"]}</h4>
-                                </div>
-                                """, unsafe_allow_html=True)
+                        if price_data['last_prices']:
+                            avg_price = sum(price_data['last_prices']) / len(price_data['last_prices'])
+                            st.metric("平均价格", f"${avg_price:.2f}")
                     
                     with col2:
-                        st.markdown("""
-                        <div class="chart-container">
-                            <h4>⚠️ 风险控制</h4>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        if price_data['volumes']:
+                            total_volume = sum(price_data['volumes'])
+                            st.metric("总交易量", f"{total_volume:,.0f}")
+                    
+                    with col3:
+                        if price_data['last_prices']:
+                            price_range = max(price_data['last_prices']) - min(price_data['last_prices'])
+                            st.metric("价格区间", f"${price_range:.2f}")
+                    
+                    # 价格对比图表
+                    st.subheader("📈 价格对比")
+                    
+                    if len(price_data['exchanges']) > 0:
+                        fig = go.Figure()
                         
-                        risk_controls = [
-                            {"风险": "执行延迟", "影响": "价差可能消失", "控制": "快速执行", "状态": "监控中"},
-                            {"风险": "滑点损失", "影响": "实际成交价差", "控制": "分批交易", "状态": "正常"},
-                            {"风险": "手续费", "影响": "减少套利收益", "控制": "计算净收益", "状态": "已计算"},
-                            {"风险": "流动性", "影响": "无法完成交易", "控制": "检查深度", "状态": "充足"}
-                        ]
+                        fig.add_trace(go.Bar(
+                            x=price_data['exchanges'],
+                            y=price_data['last_prices'],
+                            name='最新价格',
+                            marker_color='#1f77b4'
+                        ))
                         
-                        for control in risk_controls:
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.write(control["风险"])
-                            with col2:
-                                st.write(control["影响"])
-                            with col3:
-                                st.write(control["控制"])
-                            with col4:
-                                status_color = "success" if control["状态"] in ["正常", "充足"] else "warning"
-                                st.markdown(f"""
-                                <div class="metric-card {status_color}-metric">
-                                    <h4>{control["状态"]}</h4>
-                                </div>
-                                """, unsafe_allow_html=True)
+                        fig.update_layout(
+                            title=f"{selected_symbol} 多交易所价格对比",
+                            xaxis_title="交易所",
+                            yaxis_title="价格 (USD)",
+                            height=400
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # 价格详情表格 - 增强版
+                        st.subheader("📋 详细价格信息")
+                        
+                        price_details = []
+                        for i, exchange in enumerate(price_data['exchanges']):
+                            # 安全计算价差，避免除零错误
+                            bid_price = price_data['bid_prices'][i]
+                            ask_price = price_data['ask_prices'][i]
+                            
+                            if bid_price and bid_price > 0:
+                                spread = ((ask_price - bid_price) / bid_price) * 100
+                            else:
+                                spread = 0.0
+                            
+                            price_details.append({
+                                "交易所": exchange,
+                                "最新价格": f"${price_data['last_prices'][i]:.2f}",
+                                "买价": f"${bid_price:.2f}",
+                                "卖价": f"${ask_price:.2f}",
+                                "价差": f"{spread:.2f}%",
+                                "最高价": f"${price_data['high_prices'][i]:.2f}",
+                                "最低价": f"${price_data['low_prices'][i]:.2f}",
+                                "交易量": f"{price_data['volumes'][i]:,.0f}"
+                            })
+                        
+                        df = pd.DataFrame(price_details)
+                        st.dataframe(df, use_container_width=True)
+                        
+                        # 套利机会分析
+                        st.subheader("🎯 套利机会分析")
+                        
+                        if len(price_data['last_prices']) > 1:
+                            min_price = min(price_data['last_prices'])
+                            max_price = max(price_data['last_prices'])
+                            price_diff = max_price - min_price
+                            
+                            if price_diff > 0:
+                                min_exchange = price_data['exchanges'][price_data['last_prices'].index(min_price)]
+                                max_exchange = price_data['exchanges'][price_data['last_prices'].index(max_price)]
+                                
+                                st.info(f"💡 发现套利机会：{min_exchange} 价格最低 (${min_price:.2f})，{max_exchange} 价格最高 (${max_price:.2f})，价差 ${price_diff:.2f}")
+                                
+                                # 计算套利收益率
+                                if min_price > 0:
+                                    arbitrage_return = (price_diff / min_price) * 100
+                                    st.metric("套利收益率", f"{arbitrage_return:.2f}%")
+                            else:
+                                st.info("📊 当前各交易所价格差异较小，无明显套利机会")
+                        else:
+                            st.info("📊 需要至少两个交易所的数据才能进行套利分析")
+                    else:
+                        st.warning("⚠️ 没有可用的价格数据")
                 else:
-                    st.info("📊 当前价差较小，无显著套利机会")
-                
-                # 价格趋势分析 - 新增
-                st.subheader("📊 价格趋势分析")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    # 价格波动性分析
-                    st.markdown("""
-                    <div class="chart-container">
-                        <h4>📈 价格波动性</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.warning("⚠️ 请点击刷新按钮获取价格数据")
                     
-                    # 模拟价格波动数据
-                    volatility_data = {
-                        "交易所": price_data['exchanges'],
-                        "波动率": [np.random.uniform(0.5, 2.0) for _ in range(len(price_data['exchanges']))],
-                        "稳定性": [np.random.uniform(0.7, 0.95) for _ in range(len(price_data['exchanges']))],
-                        "流动性": [np.random.uniform(0.6, 0.9) for _ in range(len(price_data['exchanges']))]
-                    }
-                    
-                    df_volatility = pd.DataFrame(volatility_data)
-                    st.dataframe(df_volatility, use_container_width=True)
-                
-                with col2:
-                    # 交易所性能对比
-                    st.markdown("""
-                    <div class="chart-container">
-                        <h4>⚡ 交易所性能</h4>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    performance_data = {
-                        "交易所": price_data['exchanges'],
-                        "延迟": [np.random.uniform(0.1, 0.5) for _ in range(len(price_data['exchanges']))],
-                        "成功率": [np.random.uniform(0.95, 0.99) for _ in range(len(price_data['exchanges']))],
-                        "深度": [np.random.uniform(0.7, 0.95) for _ in range(len(price_data['exchanges']))],
-                        "评分": [np.random.uniform(0.8, 0.95) for _ in range(len(price_data['exchanges']))]
-                    }
-                    
-                    df_performance = pd.DataFrame(performance_data)
-                    st.dataframe(df_performance, use_container_width=True)
-                
-            else:
-                st.warning("⚠️ 无法获取价格数据，请检查网络连接")
+            except Exception as e:
+                st.error(f"❌ 获取多交易所价格数据失败: {e}")
+                st.info("💡 请检查网络连接和交易所API状态")
                 
         except Exception as e:
-            st.error(f"❌ 获取价格数据失败: {e}")
-            st.info("💡 提示：请确保已安装ccxt库并配置了交易所API")
-        
-        # 套利策略信息 - 增强版
-        st.subheader("🎯 跨交易所套利策略")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>📚 策略原理</h4>
-                <ul>
-                    <li>监控多个交易所的同一币种价格</li>
-                    <li>发现价格差异超过阈值时执行套利</li>
-                    <li>在低价交易所买入，高价交易所卖出</li>
-                    <li>考虑手续费、滑点、延迟等因素</li>
-                    <li>实时计算净收益和风险</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="chart-container">
-                <h4>🛡️ 风险控制</h4>
-                <ul>
-                    <li>设置最小价差阈值（0.1%）</li>
-                    <li>考虑交易手续费和滑点</li>
-                    <li>实时监控市场波动</li>
-                    <li>设置最大仓位限制</li>
-                    <li>监控执行延迟和成功率</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 套利历史记录 - 显示系统检测到的套利机会和执行结果
-        st.subheader("📈 套利历史记录")
-        st.info("💡 此表格显示系统检测到的跨交易所套利机会和执行结果，用于分析套利策略的有效性")
-        
-        # 模拟套利历史数据（实际系统中应从数据库获取）
-        base_price = 68000  # BTC当前价格
-        arbitrage_history = {
-            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20),
-            "交易对": ["BTC/USDT"] * 20,
-            "买入交易所": ["Binance", "OKX", "Bybit", "Gate.io"] * 5,
-            "卖出交易所": ["Gate.io", "Binance", "OKX", "Bybit"] * 5,
-            "买入价格": [base_price + np.random.uniform(-100, 100) for _ in range(20)],
-            "卖出价格": [base_price + np.random.uniform(-100, 100) for _ in range(20)],
-            "价差": [np.random.uniform(0.1, 0.8) for _ in range(20)],
-            "收益": [np.random.uniform(0.05, 0.6) for _ in range(20)],
-            "状态": ["成功", "成功", "失败", "成功"] * 5
-        }
-        
-        # 计算价差百分比
-        arbitrage_history["价差详情"] = []
-        for i in range(len(arbitrage_history["价差"])):
-            spread = arbitrage_history["价差"][i]
-            buy_price = arbitrage_history["买入价格"][i]
-            spread_pct = (spread / buy_price) * 100
-            arbitrage_history["价差详情"].append(f"{spread:.2f} ({spread_pct:.3f}%)")
-        
-        # 创建显示用的DataFrame
-        display_data = {
-            "时间": arbitrage_history["时间"],
-            "交易对": arbitrage_history["交易对"],
-            "买入交易所": arbitrage_history["买入交易所"],
-            "卖出交易所": arbitrage_history["卖出交易所"],
-            "买入价格": [f"${price:.2f}" for price in arbitrage_history["买入价格"]],
-            "卖出价格": [f"${price:.2f}" for price in arbitrage_history["卖出价格"]],
-            "价差": arbitrage_history["价差详情"],
-            "收益": [f"{profit:.3f}%" for profit in arbitrage_history["收益"]],
-            "状态": arbitrage_history["状态"]
-        }
-        
-        df_arbitrage = pd.DataFrame(display_data)
-        st.dataframe(df_arbitrage, use_container_width=True)
-        
-        # 套利收益统计
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            total_arbitrage = len([s for s in arbitrage_history["状态"] if s == "成功"])
-            st.markdown(f"""
-            <div class="metric-card success-metric">
-                <h3>成功套利</h3>
-                <h2>{total_arbitrage}</h2>
-                <p>总次数</p>
-                <small>成功率: {total_arbitrage/len(arbitrage_history['状态'])*100:.1f}%</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            avg_profit = sum([p for p in arbitrage_history["收益"] if p > 0]) / len([p for p in arbitrage_history["收益"] if p > 0])
-            st.markdown(f"""
-            <div class="metric-card success-metric">
-                <h3>平均收益</h3>
-                <h2>{avg_profit:.3f}%</h2>
-                <p>每次套利</p>
-                <small>净收益</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            max_spread = max(arbitrage_history["价差"])
-            st.markdown(f"""
-            <div class="metric-card warning-metric">
-                <h3>最大价差</h3>
-                <h2>{max_spread:.3f}%</h2>
-                <p>历史记录</p>
-                <small>套利机会</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            total_profit = sum(arbitrage_history["收益"])
-            st.markdown(f"""
-            <div class="metric-card success-metric">
-                <h3>总收益</h3>
-                <h2>{total_profit:.2f}%</h2>
-                <p>累计收益</p>
-                <small>套利策略</small>
-            </div>
-            """, unsafe_allow_html=True)
+            st.error(f"❌ 多交易所价格页面加载失败: {e}")
+            st.info("💡 请刷新页面重试")
     
     def render_ai_analysis_process(self):
         """渲染AI分析过程"""

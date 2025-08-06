@@ -29,14 +29,18 @@ def main():
     print("✅ 启动完整的AI增强量化交易系统界面...")
     print("🌐 访问地址: http://0.0.0.0:8060")
     
-    # 启动streamlit应用
+    # 启动streamlit应用，添加WebSocket和CORS配置
     try:
         subprocess.run([
             sys.executable, "-m", "streamlit", "run", "web/app.py",
             "--server.port", "8060",
             "--server.address", "0.0.0.0",
             "--server.headless", "true",
-            "--browser.gatherUsageStats", "false"
+            "--server.enableCORS", "true",
+            "--server.enableXsrfProtection", "false",
+            "--browser.gatherUsageStats", "false",
+            "--client.showErrorDetails", "true",
+            "--runner.magicEnabled", "true"
         ], check=True)
     except subprocess.CalledProcessError as e:
         print(f"❌ 启动失败: {e}")

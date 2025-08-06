@@ -255,6 +255,22 @@ class RealTimeDataManager:
             for exchange_name, exchange in self.exchanges.items():
                 try:
                     ticker = exchange.fetch_ticker(symbol)
+                    
+                    # 检查ticker是否为None或空
+                    if not ticker:
+                        self.logger.warning(f"⚠️ 获取 {exchange_name} {symbol} ticker数据为空")
+                        prices[exchange_name] = None
+                        continue
+                    
+                    # 检查必要的键是否存在
+                    required_keys = ['last', 'bid', 'ask', 'baseVolume', 'percentage']
+                    missing_keys = [key for key in required_keys if key not in ticker or ticker[key] is None]
+                    
+                    if missing_keys:
+                        self.logger.warning(f"⚠️ {exchange_name} {symbol} ticker缺少必要数据: {missing_keys}")
+                        prices[exchange_name] = None
+                        continue
+                    
                     prices[exchange_name] = {
                         'last': ticker['last'],
                         'bid': ticker['bid'],

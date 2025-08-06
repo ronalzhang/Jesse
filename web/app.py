@@ -840,27 +840,36 @@ class JessePlusWebInterface:
                         volumes = []
                         
                         for exchange_name, ticker_data in multi_prices.items():
-                            if ticker_data:
-                                exchanges.append(exchange_name.upper())
-                                last_prices.append(ticker_data['last'])
-                                bid_prices.append(ticker_data['bid'])
-                                ask_prices.append(ticker_data['ask'])
-                                high_prices.append(ticker_data['high'])
-                                low_prices.append(ticker_data['low'])
-                                volumes.append(ticker_data['volume'])
+                            if ticker_data and isinstance(ticker_data, dict):
+                                # 检查必要的数据字段
+                                required_fields = ['last', 'bid', 'ask', 'high', 'low', 'volume']
+                                if all(field in ticker_data and ticker_data[field] is not None for field in required_fields):
+                                    exchanges.append(exchange_name.upper())
+                                    last_prices.append(float(ticker_data['last']))
+                                    bid_prices.append(float(ticker_data['bid']))
+                                    ask_prices.append(float(ticker_data['ask']))
+                                    high_prices.append(float(ticker_data['high']))
+                                    low_prices.append(float(ticker_data['low']))
+                                    volumes.append(float(ticker_data['volume']))
+                                else:
+                                    st.warning(f"⚠️ {exchange_name} 数据不完整，跳过")
+                            else:
+                                st.warning(f"⚠️ {exchange_name} 数据获取失败")
                         
-                        st.session_state.price_data = {
-                            'exchanges': exchanges,
-                            'last_prices': last_prices,
-                            'bid_prices': bid_prices,
-                            'ask_prices': ask_prices,
-                            'high_prices': high_prices,
-                            'low_prices': low_prices,
-                            'volumes': volumes
-                        }
+                        if exchanges:  # 确保有有效数据
+                            st.session_state.price_data = {
+                                'exchanges': exchanges,
+                                'last_prices': last_prices,
+                                'bid_prices': bid_prices,
+                                'ask_prices': ask_prices,
+                                'high_prices': high_prices,
+                                'low_prices': low_prices,
+                                'volumes': volumes
+                            }
+                        else:
+                            st.error("❌ 没有获取到有效的价格数据")
                     else:
                         st.error("❌ 无法获取多交易所价格数据")
-                        st.session_state.price_data = None
             
             price_data = st.session_state.get('price_data', {})
             
@@ -918,12 +927,20 @@ class JessePlusWebInterface:
                 
                 price_details = []
                 for i, exchange in enumerate(price_data['exchanges']):
-                    spread = ((price_data['ask_prices'][i] - price_data['bid_prices'][i]) / price_data['bid_prices'][i]) * 100
+                    # 安全计算价差，避免除零错误
+                    bid_price = price_data['bid_prices'][i]
+                    ask_price = price_data['ask_prices'][i]
+                    
+                    if bid_price and bid_price > 0:
+                        spread = ((ask_price - bid_price) / bid_price) * 100
+                    else:
+                        spread = 0.0
+                    
                     price_details.append({
                         "交易所": exchange,
                         "最新价格": f"${price_data['last_prices'][i]:.2f}",
-                        "买价": f"${price_data['bid_prices'][i]:.2f}",
-                        "卖价": f"${price_data['ask_prices'][i]:.2f}",
+                        "买价": f"${bid_price:.2f}",
+                        "卖价": f"${ask_price:.2f}",
                         "价差": f"{spread:.3f}%",
                         "24h最高": f"${price_data.get('high_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
                         "24h最低": f"${price_data.get('low_prices', [0]*len(price_data['exchanges']))[i]:.2f}",
@@ -2946,6 +2963,18 @@ class RealDataCollector:
             
             exchange = self.exchanges[exchange_name]
             ticker = exchange.fetch_ticker(symbol)
+            
+            # 检查ticker是否为None或空
+            if not ticker:
+                st.warning(f"⚠️ 获取 {exchange_name} {symbol} ticker数据为空")
+                return None
+            
+            # 检查必要的键是否存在
+            required_keys = ['last', 'bid', 'ask', 'high', 'low', 'baseVolume', 'percentage', 'timestamp']
+            for key in required_keys:
+                if key not in ticker or ticker[key] is None:
+                    st.warning(f"⚠️ {exchange_name} {symbol} ticker缺少必要数据: {key}")
+                    return None
             
             return {
                 'last': ticker['last'],

@@ -181,14 +181,20 @@ class HighFrequencyTradingSystem:
         for exchange in self.config['exchanges']:
             for pair in self.config['trading_pairs']:
                 try:
-                    # 创建策略实例
-                    strategy = HighFrequencyStrategy()
-                    
-                    # 检查交易信号
-                    if strategy.should_long():
-                        self._execute_long_trade(exchange, pair, strategy)
-                    elif strategy.should_short():
-                        self._execute_short_trade(exchange, pair, strategy)
+                    # 获取市场数据
+                    if exchange in market_data and pair in market_data[exchange]:
+                        data = market_data[exchange][pair]
+                        
+                        # 创建策略实例
+                        strategy = HighFrequencyStrategy()
+                        
+                        # 检查交易信号
+                        if strategy.should_long(data):
+                            self._execute_long_trade(exchange, pair, strategy)
+                        elif strategy.should_short(data):
+                            self._execute_short_trade(exchange, pair, strategy)
+                    else:
+                        self.logger.warning(f"⚠️ 缺少市场数据: {exchange}/{pair}")
                     
                 except Exception as e:
                     self.logger.error(f"❌ 策略执行错误 {exchange}/{pair}: {e}")
@@ -251,12 +257,15 @@ class HighFrequencyTradingSystem:
     def _update_system_status(self):
         """更新系统状态"""
         # 更新系统监控
-        self.system_monitor.update_status({
-            'trading_active': self.trading_active,
-            'daily_trades': len(self.daily_trades),
-            'daily_pnl': self.daily_pnl,
-            'uptime': (datetime.now() - self.start_time).total_seconds()
-        })
+        try:
+            self.system_monitor.update_status({
+                'trading_active': self.trading_active,
+                'daily_trades': len(self.daily_trades),
+                'daily_pnl': self.daily_pnl,
+                'uptime': (datetime.now() - self.start_time).total_seconds()
+            })
+        except Exception as e:
+            self.logger.warning(f"⚠️ 系统状态更新失败: {e}")
     
     def stop_trading(self):
         """停止交易"""

@@ -101,6 +101,18 @@ class SystemMonitor:
         except Exception as e:
             self.logger.error(f"❌ 系统健康检查失败: {e}")
     
+    def update_status(self, status_data: Dict[str, Any]):
+        """更新系统状态"""
+        try:
+            # 记录状态更新
+            self.logger.info(f"📊 系统状态更新: {status_data}")
+            
+            # 这里可以添加状态持久化逻辑
+            # 例如保存到数据库或文件
+            
+        except Exception as e:
+            self.logger.error(f"❌ 状态更新失败: {e}")
+    
     def get_performance_summary(self) -> Dict[str, Any]:
         """获取性能摘要"""
         try:

@@ -596,7 +596,7 @@ class JessePlusWebInterface:
                     # price_data = price_collector.get_price_comparison_chart_data(selected_symbol)
                     # st.session_state.price_data = price_data
                     # 模拟数据生成
-                    dates = pd.date_range(start='2024-01-01', periods=10, freq='H')
+                    dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=10, freq='H')
                     prices = self.data_generator.generate_price_data(10)
                     volumes = self.data_generator.generate_volume_data(10)
                     exchanges = ["Binance", "OKX", "Bybit", "Gate.io"]
@@ -907,7 +907,7 @@ class JessePlusWebInterface:
         
         # 模拟套利历史数据
         arbitrage_history = {
-            "时间": pd.date_range(start='2024-01-01', periods=20, freq='H'),
+            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=20, freq='H'),
             "交易对": ["BTC/USDT"] * 20,
             "买入交易所": ["Binance", "OKX", "Bybit", "Gate.io"] * 5,
             "卖出交易所": ["Gate.io", "Binance", "OKX", "Bybit"] * 5,
@@ -1208,7 +1208,7 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
             
             # 模拟预测数据
-            dates = pd.date_range(start='2024-01-01', periods=24, freq='H')
+            dates = pd.date_range(start=datetime.now() - timedelta(days=1), periods=24, freq='H')
             actual_prices = [42000 + i * 50 + np.random.normal(0, 100) for i in range(24)]
             predicted_prices = [p + np.random.normal(0, 200) for p in actual_prices]
             confidence_intervals = [np.random.uniform(0.6, 0.9) for _ in range(24)]
@@ -1245,7 +1245,7 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            accuracy_dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+            accuracy_dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
             accuracy_rates = [65 + np.random.normal(0, 5) for _ in range(30)]
             
             fig = go.Figure()
@@ -1421,7 +1421,7 @@ class JessePlusWebInterface:
         st.subheader("📈 历史决策记录")
         
         decision_history = {
-            "时间": pd.date_range(start='2024-01-01', periods=10, freq='H'),
+            "时间": pd.date_range(start=datetime.now() - timedelta(days=1), periods=10, freq='H'),
             "信号": ["买入", "卖出", "买入", "持有", "买入", "卖出", "买入", "持有", "买入", "卖出"],
             "价格": [42000, 43500, 42800, 43200, 42900, 44100, 43800, 44000, 44200, 44800],
             "收益": [2.1, -1.5, 3.2, 0.0, 2.8, 1.9, 1.2, 0.0, 1.5, 2.3],
@@ -1648,12 +1648,13 @@ class JessePlusWebInterface:
         # 进化里程碑 - 新增
         st.subheader("🏆 进化里程碑")
         
+        current_time = datetime.now()
         milestones = [
-            {"时间": "2024-01-01 14:30", "事件": "🎯 策略评分突破80分", "详情": "AI增强策略评分达到82.5分"},
-            {"时间": "2024-01-01 14:25", "事件": "💰 日收益率达到30%", "详情": "单日收益率达到32.1%，超过目标"},
-            {"时间": "2024-01-01 14:20", "事件": "🛡️ 风险控制优化", "详情": "最大回撤降低到3.2%，风险控制显著改善"},
-            {"时间": "2024-01-01 14:15", "事件": "🤖 AI准确率提升", "详情": "AI预测准确率提升到72.1%"},
-            {"时间": "2024-01-01 14:10", "事件": "📈 夏普比率突破2.0", "详情": "夏普比率达到2.1，风险调整后收益优秀"}
+            {"时间": (current_time - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M"), "事件": "🎯 策略评分突破80分", "详情": "AI增强策略评分达到82.5分"},
+            {"时间": (current_time - timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M"), "事件": "💰 日收益率达到30%", "详情": "单日收益率达到32.1%，超过目标"},
+            {"时间": (current_time - timedelta(minutes=20)).strftime("%Y-%m-%d %H:%M"), "事件": "🛡️ 风险控制优化", "详情": "最大回撤降低到3.2%，风险控制显著改善"},
+            {"时间": (current_time - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M"), "事件": "🤖 AI准确率提升", "详情": "AI预测准确率提升到72.1%"},
+            {"时间": (current_time - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M"), "事件": "📈 夏普比率突破2.0", "详情": "夏普比率达到2.1，风险调整后收益优秀"}
         ]
         
         for milestone in milestones:
@@ -2108,8 +2109,10 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
             
-            # 模拟实时价格数据
-            dates = pd.date_range(start='2024-01-01', periods=100, freq='H')
+            # 使用当前时间生成实时价格数据
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=7)  # 最近7天数据
+            dates = pd.date_range(start=start_date, end=end_date, periods=100, freq='H')
             prices = self.data_generator.generate_price_data(100)
             
             fig = go.Figure()
@@ -2130,7 +2133,7 @@ class JessePlusWebInterface:
             ))
             
             fig.update_layout(
-                title="BTC/USDT 价格走势",
+                title="BTC/USDT 价格走势 (最近7天)",
                 xaxis_title="时间",
                 yaxis_title="价格 (USDT)",
                 height=400,
@@ -2361,7 +2364,7 @@ class JessePlusWebInterface:
         
         with col1:
             # 夏普比率趋势
-            dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+            dates = pd.date_range(start=datetime.now() - timedelta(days=30), periods=30, freq='D')
             sharpe_ratios = [1.2 + np.random.normal(0, 0.2) for _ in range(30)]
             
             fig = go.Figure()

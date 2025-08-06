@@ -105,12 +105,12 @@ class CompleteSystem:
             self.dashboard_process = subprocess.Popen([
                 sys.executable, "-m", "streamlit", "run", 
                 "web/dashboard.py",
-                "--server.port", "8501",
-                "--server.address", "localhost"
+                "--server.port", "8060",
+                "--server.address", "0.0.0.0"
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             print(f"✅ Web仪表板已启动 (PID: {self.dashboard_process.pid})")
-            print("🔗 访问地址: http://localhost:8501")
+            print("🔗 访问地址: http://0.0.0.0:8060")
             return True
             
         except Exception as e:

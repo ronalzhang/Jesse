@@ -619,8 +619,11 @@ class AutoStrategyEvolutionSystem:
             try:
                 from data.market_data_collector import MarketDataCollector
                 collector = MarketDataCollector()
-                market_data = collector.get_historical_data(
-                    symbol='BTCUSDT',
+                
+                # 使用正确的方法名
+                market_data = collector.fetch_ohlcv(
+                    exchange_name='binance',
+                    symbol='BTC/USDT',
                     timeframe='1h',
                     limit=1000
                 )
@@ -633,6 +636,8 @@ class AutoStrategyEvolutionSystem:
                     
             except ImportError:
                 self.logger.warning("⚠️ 市场数据收集器未找到")
+            except Exception as e:
+                self.logger.warning(f"⚠️ 获取市场数据失败: {e}")
             
             # 尝试从文件加载历史数据
             data_file = "data/market_data.csv"

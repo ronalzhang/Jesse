@@ -7,8 +7,13 @@ Jesse+ Web界面 - 增强版
 
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    print("⚠️ plotly未安装，图表功能将不可用")
 from datetime import datetime, timedelta
 import json
 import os
@@ -1694,314 +1699,11 @@ class JessePlusWebInterface:
         st.dataframe(df_decisions, use_container_width=True)
     
     def render_strategy_evolution(self):
-        """渲染策略进化过程 - 融合全自动进化系统"""
+        """渲染策略进化过程 - 全自动进化系统"""
         st.subheader("🧬 策略进化系统")
         
-        # 创建选项卡，分别显示传统策略进化和全自动进化
-        tab1, tab2 = st.tabs(["📈 传统策略进化", "🤖 全自动进化系统"])
-        
-        with tab1:
-            self._render_traditional_strategy_evolution()
-        
-        with tab2:
-            self._render_auto_evolution_system()
-    
-    def _render_traditional_strategy_evolution(self):
-        """渲染传统策略进化"""
-        # 尝试获取真实数据
-        real_evolution_data = self._get_real_evolution_data()
-        
-        # 进化概览
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            generation_count = real_evolution_data.get('generation_count', 156)
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>进化代数</h3>
-                <h2>{generation_count}</h2>
-                <p>当前代数</p>
-                <small>+{real_evolution_data.get('daily_generations', 12)} 今日</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            best_fitness = real_evolution_data.get('best_fitness', 0.85)
-            color = "success" if best_fitness >= 0.8 else "warning" if best_fitness >= 0.6 else "danger"
-            st.markdown(f"""
-            <div class="metric-card {color}-metric">
-                <h3>最佳适应度</h3>
-                <h2>{best_fitness:.2f}</h2>
-                <p>目标: > 0.8</p>
-                <small>+{real_evolution_data.get('fitness_improvement', 0.03):.2f} 改进</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            avg_fitness = real_evolution_data.get('avg_fitness', 0.78)
-            color = "success" if avg_fitness >= 0.8 else "warning" if avg_fitness >= 0.6 else "danger"
-            st.markdown(f"""
-            <div class="metric-card {color}-metric">
-                <h3>平均适应度</h3>
-                <h2>{avg_fitness:.2f}</h2>
-                <p>种群平均</p>
-                <small>+{real_evolution_data.get('avg_improvement', 0.02):.2f} 提升</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            mutation_rate = real_evolution_data.get('mutation_rate', 0.15)
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>变异率</h3>
-                <h2>{mutation_rate:.2f}</h2>
-                <p>当前设置</p>
-                <small>{real_evolution_data.get('mutation_change', -0.02):.2f} 调整</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 进化时间线
-        st.subheader("📅 策略进化时间线")
-        
-        evolution_timeline = real_evolution_data.get('timeline', [
-            {"时间": "00:00:00", "事件": "系统启动", "状态": "✅ 完成", "详情": "初始化遗传算法"},
-            {"时间": "00:00:30", "事件": "加载历史数据", "状态": "✅ 完成", "详情": "加载1000+历史交易数据"},
-            {"时间": "00:01:00", "事件": "策略性能评估", "状态": "✅ 完成", "详情": "评估5个活跃策略"},
-            {"时间": "00:01:30", "事件": "遗传算法优化", "状态": "🔄 进行中", "详情": f"第{generation_count}代进化进行中"},
-            {"时间": "00:02:00", "事件": "参数调整", "状态": "⏳ 等待", "详情": "等待优化完成"},
-            {"时间": "00:02:30", "事件": "策略测试", "状态": "⏳ 等待", "详情": "回测新策略参数"},
-            {"时间": "00:03:00", "事件": "策略部署", "状态": "⏳ 等待", "详情": "部署优化后的策略"}
-        ])
-        
-        for event in evolution_timeline:
-            col1, col2, col3, col4 = st.columns([1, 2, 1, 3])
-            with col1:
-                st.markdown(f"""
-                <div class="metric-card info-metric">
-                    <h4>{event["时间"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"""
-                <div class="metric-card info-metric">
-                    <h4>{event["事件"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with col3:
-                status_color = "success" if "完成" in event["状态"] else "warning" if "进行中" in event["状态"] else "danger"
-                st.markdown(f"""
-                <div class="metric-card {status_color}-metric">
-                    <h4>{event["状态"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with col4:
-                st.markdown(f"""
-                <div class="metric-card info-metric">
-                    <h4>{event["详情"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # 策略进化详情
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("🧬 遗传算法进化")
-            
-            # 获取真实进化数据
-            generation_data = real_evolution_data.get('generation_data', {
-                "代数": list(range(1, 21)),
-                "最佳适应度": [0.65, 0.68, 0.71, 0.73, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 
-                            0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90],
-                "平均适应度": [0.60, 0.62, 0.65, 0.67, 0.69, 0.71, 0.72, 0.73, 0.74, 0.75,
-                            0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85],
-                "变异率": [0.20, 0.19, 0.18, 0.17, 0.16, 0.15, 0.14, 0.13, 0.12, 0.11,
-                         0.10, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01]
-            })
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=generation_data["代数"],
-                y=generation_data["最佳适应度"],
-                mode='lines+markers',
-                name='最佳适应度',
-                line=dict(color='#00ff88', width=3),
-                marker=dict(size=6)
-            ))
-            fig.add_trace(go.Scatter(
-                x=generation_data["代数"],
-                y=generation_data["平均适应度"],
-                mode='lines+markers',
-                name='平均适应度',
-                line=dict(color='#ff8800', width=2),
-                marker=dict(size=4)
-            ))
-            
-            # 添加目标线
-            fig.add_hline(y=0.8, line_dash="dash", line_color="green", 
-                         annotation_text="目标适应度(0.8)")
-            
-            fig.update_layout(
-                title="遗传算法进化过程",
-                xaxis_title="代数",
-                yaxis_title="适应度",
-                height=400,
-                template="plotly_dark",
-                showlegend=True
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.subheader("📊 策略参数优化")
-            
-            # 参数优化进度
-            params_optimization = real_evolution_data.get('params_optimization', {
-                "参数": ["RSI周期", "MACD快线", "MACD慢线", "布林带周期", "止损比例", "仓位大小"],
-                "原值": [14, 12, 26, 20, 0.05, 0.1],
-                "优化值": [16, 10, 28, 18, 0.04, 0.12],
-                "改进": ["+14%", "-17%", "+8%", "-10%", "-20%", "+20%"],
-                "状态": ["✅", "✅", "✅", "✅", "✅", "✅"]
-            })
-            
-            df_params = pd.DataFrame(params_optimization)
-            st.dataframe(df_params, use_container_width=True)
-            
-            # 策略性能对比
-            st.subheader("📈 策略性能对比")
-            
-            performance_comparison = real_evolution_data.get('performance_comparison', {
-                "指标": ["收益率", "胜率", "最大回撤", "夏普比率", "交易频率"],
-                "优化前": [1.8, 58, 5.2, 1.2, 12],
-                "优化后": [2.5, 68, 3.2, 1.8, 15],
-                "改进": ["+39%", "+17%", "-38%", "+50%", "+25%"]
-            })
-            
-            df_performance = pd.DataFrame(performance_comparison)
-            st.dataframe(df_performance, use_container_width=True)
-        
-        # 强化学习训练
-        st.subheader("🎯 强化学习训练状态")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            training_rounds = real_evolution_data.get('training_rounds', 1234)
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>训练回合</h3>
-                <h2>{training_rounds:,}</h2>
-                <p>+{real_evolution_data.get('daily_training_rounds', 56)} 今日</p>
-                <small>目标: 10,000</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            avg_reward = real_evolution_data.get('avg_reward', 0.78)
-            color = "success" if avg_reward >= 0.8 else "warning" if avg_reward >= 0.6 else "danger"
-            st.markdown(f"""
-            <div class="metric-card {color}-metric">
-                <h3>平均奖励</h3>
-                <h2>{avg_reward:.2f}</h2>
-                <p>+{real_evolution_data.get('reward_improvement', 0.05):.2f} 改进</p>
-                <small>目标: > 0.8</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            exploration_rate = real_evolution_data.get('exploration_rate', 0.15)
-            color = "success" if 0.1 <= exploration_rate <= 0.2 else "warning"
-            st.markdown(f"""
-            <div class="metric-card {color}-metric">
-                <h3>探索率</h3>
-                <h2>{exploration_rate:.2f}</h2>
-                <p>{real_evolution_data.get('exploration_change', -0.02):.2f} 调整</p>
-                <small>目标: 0.1-0.2</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            learning_rate = real_evolution_data.get('learning_rate', 0.001)
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>学习率</h3>
-                <h2>{learning_rate:.3f}</h2>
-                <p>稳定</p>
-                <small>自适应调整</small>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 训练进度条
-        training_progress = real_evolution_data.get('training_progress', 0.65)
-        st.progress(training_progress)
-        st.write(f"强化学习训练进度: {training_progress:.1%}")
-        
-        # 进化里程碑
-        st.subheader("🏆 进化里程碑")
-        
-        milestones = real_evolution_data.get('milestones', [
-            {"时间": (datetime.now() - timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M"), "事件": "🎯 策略评分突破80分", "详情": "AI增强策略评分达到82.5分"},
-            {"时间": (datetime.now() - timedelta(minutes=25)).strftime("%Y-%m-%d %H:%M"), "事件": "💰 日收益率达到30%", "详情": "单日收益率达到32.1%，超过目标"},
-            {"时间": (datetime.now() - timedelta(minutes=20)).strftime("%Y-%m-%d %H:%M"), "事件": "🛡️ 风险控制优化", "详情": "最大回撤降低到3.2%，风险控制显著改善"},
-            {"时间": (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M"), "事件": "🤖 AI准确率提升", "详情": "AI预测准确率提升到72.1%"},
-            {"时间": (datetime.now() - timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M"), "事件": "📈 夏普比率突破2.0", "详情": "夏普比率达到2.1，风险调整后收益优秀"}
-        ])
-        
-        for milestone in milestones:
-            col1, col2, col3 = st.columns([1, 2, 3])
-            with col1:
-                st.markdown(f"""
-                <div class="metric-card info-metric">
-                    <h4>{milestone["时间"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"""
-                <div class="metric-card success-metric">
-                    <h4>{milestone["事件"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-            with col3:
-                st.markdown(f"""
-                <div class="metric-card info-metric">
-                    <h4>{milestone["详情"]}</h4>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # 策略进化热力图
-        st.subheader("🔥 策略进化热力图")
-        
-        # 生成策略评分热力图数据
-        strategies = ["AI增强策略", "移动平均线策略", "RSI策略", "MACD策略", "布林带策略"]
-        metrics = ["收益率", "胜率", "夏普比率", "最大回撤", "交易频率"]
-        
-        # 模拟热力图数据
-        heatmap_data = real_evolution_data.get('heatmap_data', np.array([
-            [85, 78, 82, 75, 80],  # AI增强策略
-            [72, 68, 70, 65, 75],  # 移动平均线策略
-            [68, 65, 67, 60, 70],  # RSI策略
-            [65, 62, 64, 58, 68],  # MACD策略
-            [75, 70, 73, 68, 78]   # 布林带策略
-        ]))
-        
-        fig = go.Figure(data=go.Heatmap(
-            z=heatmap_data,
-            x=metrics,
-            y=strategies,
-            colorscale='Viridis',
-            text=heatmap_data,
-            texttemplate="%{text}",
-            textfont={"size": 12},
-            hoverongaps=False
-        ))
-        
-        fig.update_layout(
-            title="策略性能热力图",
-            xaxis_title="性能指标",
-            yaxis_title="策略",
-            height=400,
-            template="plotly_dark"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        # 只显示全自动进化系统
+        self._render_auto_evolution_system()
     
     def _render_auto_evolution_system(self):
         """渲染全自动进化系统"""
@@ -2009,6 +1711,9 @@ class JessePlusWebInterface:
             st.error("❌ 全自动策略进化系统不可用")
             st.info("💡 请检查系统安装和依赖")
             return
+        
+        # 获取真实的进化数据
+        real_evolution_data = self._get_real_evolution_data()
         
         # 系统状态概览
         col1, col2, col3, col4 = st.columns(4)
@@ -2059,16 +1764,8 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
         
         with col2:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    generation = summary.get('current_generation', 0)
-                except Exception as e:
-                    st.error(f"❌ 获取进化数据失败: {e}")
-                    generation = 0
-            else:
-                generation = 0
-            
+            # 使用真实数据
+            generation = real_evolution_data.get('generation_count', 0)
             st.markdown(f"""
             <div class="metric-card info-metric">
                 <h3>当前代数</h3>
@@ -2078,16 +1775,8 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
         
         with col3:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    best_fitness = summary.get('best_fitness', 0.0)
-                except Exception as e:
-                    st.error(f"❌ 获取适应度数据失败: {e}")
-                    best_fitness = 0.0
-            else:
-                best_fitness = 0.0
-            
+            # 使用真实数据
+            best_fitness = real_evolution_data.get('best_fitness', 0.0)
             color = "success" if best_fitness >= 0.8 else "warning" if best_fitness >= 0.6 else "danger"
             st.markdown(f"""
             <div class="metric-card {color}-metric">
@@ -2098,16 +1787,8 @@ class JessePlusWebInterface:
             """, unsafe_allow_html=True)
         
         with col4:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    population_size = summary.get('population_size', 0)
-                except Exception as e:
-                    st.error(f"❌ 获取种群数据失败: {e}")
-                    population_size = 0
-            else:
-                population_size = 0
-            
+            # 使用真实数据
+            population_size = real_evolution_data.get('population_size', 0)
             st.markdown(f"""
             <div class="metric-card info-metric">
                 <h3>种群大小</h3>
@@ -2175,57 +1856,62 @@ class JessePlusWebInterface:
                 # 进化历史
                 st.subheader("📈 进化历史")
                 
-                if summary.get('evolution_history'):
+                if summary and summary.get('evolution_history'):
                     evolution_data = pd.DataFrame(summary['evolution_history'])
                     
                     # 创建进化历史图表
-                    fig = go.Figure()
-                    
-                    fig.add_trace(go.Scatter(
-                        x=evolution_data['generation'],
-                        y=evolution_data['best_fitness'],
-                        mode='lines+markers',
-                        name='最佳适应度',
-                        line=dict(color='#10b981', width=2),
-                        marker=dict(size=6)
-                    ))
-                    
-                    fig.add_trace(go.Scatter(
-                        x=evolution_data['generation'],
-                        y=evolution_data['avg_fitness'],
-                        mode='lines+markers',
-                        name='平均适应度',
-                        line=dict(color='#3b82f6', width=2),
-                        marker=dict(size=6)
-                    ))
-                    
-                    fig.update_layout(
-                        title="策略进化趋势",
-                        xaxis_title="代数",
-                        yaxis_title="适应度",
-                        height=400,
-                        showlegend=True
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
+                    if PLOTLY_AVAILABLE:
+                        fig = go.Figure()
+                        
+                        fig.add_trace(go.Scatter(
+                            x=evolution_data['generation'],
+                            y=evolution_data['best_fitness'],
+                            mode='lines+markers',
+                            name='最佳适应度',
+                            line=dict(color='#10b981', width=2),
+                            marker=dict(size=6)
+                        ))
+                        
+                        fig.add_trace(go.Scatter(
+                            x=evolution_data['generation'],
+                            y=evolution_data['avg_fitness'],
+                            mode='lines+markers',
+                            name='平均适应度',
+                            line=dict(color='#3b82f6', width=2),
+                            marker=dict(size=6)
+                        ))
+                        
+                        fig.update_layout(
+                            title="策略进化趋势",
+                            xaxis_title="代数",
+                            yaxis_title="适应度",
+                            height=400,
+                            showlegend=True
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        # 如果没有plotly，显示数据表格
+                        st.write("📊 进化历史数据:")
+                        st.dataframe(evolution_data, use_container_width=True)
                 else:
                     st.info("📊 暂无进化历史数据")
                 
                 # 顶级策略
                 st.subheader("🏆 顶级策略")
                 
-                top_strategies = summary.get('top_strategies', [])
+                top_strategies = summary.get('top_strategies', []) if summary else []
                 if top_strategies:
                     strategy_data = []
                     for strategy in top_strategies[:10]:  # 显示前10个策略
                         strategy_data.append({
-                            '策略名称': strategy['name'],
-                            '适应度': f"{strategy['fitness']:.3f}",
-                            '总收益': f"{strategy['performance']['total_return']:.2%}",
-                            '夏普比率': f"{strategy['performance']['sharpe_ratio']:.2f}",
-                            '最大回撤': f"{strategy['performance']['max_drawdown']:.2%}",
-                            '胜率': f"{strategy['performance']['win_rate']:.2%}",
-                            '代数': strategy['generation']
+                            '策略名称': strategy.get('name', '未知策略'),
+                            '适应度': f"{strategy.get('fitness', 0.0):.3f}",
+                            '总收益': f"{strategy.get('performance', {}).get('total_return', 0.0):.2%}",
+                            '夏普比率': f"{strategy.get('performance', {}).get('sharpe_ratio', 0.0):.2f}",
+                            '最大回撤': f"{strategy.get('performance', {}).get('max_drawdown', 0.0):.2%}",
+                            '胜率': f"{strategy.get('performance', {}).get('win_rate', 0.0):.2%}",
+                            '代数': strategy.get('generation', 0)
                         })
                     
                     df_strategies = pd.DataFrame(strategy_data)
@@ -2236,7 +1922,7 @@ class JessePlusWebInterface:
                 # 性能指标
                 st.subheader("📊 性能指标")
                 
-                performance_metrics = summary.get('performance_metrics', {})
+                performance_metrics = summary.get('performance_metrics', {}) if summary else {}
                 if performance_metrics:
                     col1, col2, col3, col4 = st.columns(4)
                     
@@ -2309,12 +1995,12 @@ class JessePlusWebInterface:
                     # 显示最后更新时间
                     try:
                         summary = self.auto_evolution_system.get_evolution_summary()
-                        last_update = summary.get('last_evolution_date', '未知')
+                        last_update = summary.get('last_evolution_date', '未知') if summary else '未知'
                         st.write(f"**最后更新时间**: {last_update}")
                         
                         # 显示当前进化状态
-                        current_generation = summary.get('current_generation', 0)
-                        best_fitness = summary.get('best_fitness', 0.0)
+                        current_generation = summary.get('current_generation', 0) if summary else 0
+                        best_fitness = summary.get('best_fitness', 0.0) if summary else 0.0
                         st.write(f"**当前代数**: {current_generation}")
                         st.write(f"**最佳适应度**: {best_fitness:.3f}")
                         
@@ -2335,39 +2021,7 @@ class JessePlusWebInterface:
     def _get_real_evolution_data(self):
         """获取真实的策略进化数据"""
         try:
-            # 尝试从策略进化跟踪器获取真实数据
-            if hasattr(self, 'evolution_tracker') and self.evolution_tracker:
-                evolution_summary = self.evolution_tracker.get_evolution_summary()
-                if evolution_summary:
-                    return {
-                        'generation_count': evolution_summary.get('summary', {}).get('total_days', 156),
-                        'best_fitness': evolution_summary.get('summary', {}).get('best_score', 0.85),
-                        'avg_fitness': evolution_summary.get('summary', {}).get('avg_score', 0.78),
-                        'mutation_rate': 0.15,
-                        'training_rounds': 1234,
-                        'avg_reward': 0.78,
-                        'exploration_rate': 0.15,
-                        'learning_rate': 0.001,
-                        'training_progress': 0.65
-                    }
-            
-            # 尝试从实时数据管理器获取数据
-            if hasattr(self, 'real_time_data') and self.real_time_data:
-                evolution_data = self.real_time_data.get_evolution_process()
-                if evolution_data:
-                    return {
-                        'generation_count': evolution_data.get('current_generation', 156),
-                        'best_fitness': evolution_data.get('best_fitness', 0.85),
-                        'avg_fitness': evolution_data.get('avg_fitness', 0.78),
-                        'mutation_rate': 0.15,
-                        'training_rounds': 1234,
-                        'avg_reward': evolution_data.get('avg_reward', 0.78),
-                        'exploration_rate': evolution_data.get('exploration_rate', 0.15),
-                        'learning_rate': evolution_data.get('learning_rate', 0.001),
-                        'training_progress': evolution_data.get('training_progress', 0.65)
-                    }
-            
-            # 尝试从全自动策略进化系统获取真实数据
+            # 优先从全自动策略进化系统获取真实数据
             if hasattr(self, 'auto_evolution_system') and self.auto_evolution_system:
                 try:
                     summary = self.auto_evolution_system.get_evolution_summary()
@@ -2376,27 +2030,69 @@ class JessePlusWebInterface:
                             'generation_count': summary.get('current_generation', 0),
                             'best_fitness': summary.get('best_fitness', 0.0),
                             'avg_fitness': summary.get('avg_fitness', 0.0),
-                            'mutation_rate': 0.15,
-                            'training_rounds': 1234,
-                            'avg_reward': 0.78,
+                            'population_size': summary.get('population_size', 0),
+                            'evolution_history': summary.get('evolution_history', []),
+                            'last_evolution_date': summary.get('last_evolution_date'),
+                            'is_running': getattr(self.auto_evolution_system, 'is_running', False),
+                            'training_progress': 0.65,
                             'exploration_rate': 0.15,
-                            'learning_rate': 0.001,
-                            'training_progress': 0.65
+                            'learning_rate': 0.001
                         }
                 except Exception as e:
-                    st.warning(f"⚠️ 获取真实进化数据失败: {e}")
+                    st.warning(f"⚠️ 获取全自动进化系统数据失败: {e}")
             
-            # 如果都没有，返回默认的模拟数据
+            # 尝试从实时数据管理器获取数据
+            if hasattr(self, 'real_time_data') and self.real_time_data:
+                try:
+                    evolution_data = self.real_time_data.get_evolution_process()
+                    if evolution_data:
+                        return {
+                            'generation_count': evolution_data.get('current_generation', 0),
+                            'best_fitness': evolution_data.get('best_fitness', 0.0),
+                            'avg_fitness': evolution_data.get('avg_fitness', 0.0),
+                            'population_size': evolution_data.get('population_size', 0),
+                            'evolution_history': evolution_data.get('evolution_history', []),
+                            'last_evolution_date': evolution_data.get('last_evolution_date'),
+                            'is_running': evolution_data.get('is_running', False),
+                            'training_progress': evolution_data.get('training_progress', 0.0),
+                            'exploration_rate': evolution_data.get('exploration_rate', 0.15),
+                            'learning_rate': evolution_data.get('learning_rate', 0.001)
+                        }
+                except Exception as e:
+                    st.warning(f"⚠️ 获取实时数据管理器数据失败: {e}")
+            
+            # 尝试从策略进化跟踪器获取真实数据
+            if hasattr(self, 'evolution_tracker') and self.evolution_tracker:
+                try:
+                    evolution_summary = self.evolution_tracker.get_evolution_summary()
+                    if evolution_summary:
+                        return {
+                            'generation_count': evolution_summary.get('summary', {}).get('total_days', 0),
+                            'best_fitness': evolution_summary.get('summary', {}).get('best_score', 0.0),
+                            'avg_fitness': evolution_summary.get('summary', {}).get('avg_score', 0.0),
+                            'population_size': 0,
+                            'evolution_history': [],
+                            'last_evolution_date': None,
+                            'is_running': False,
+                            'training_progress': 0.0,
+                            'exploration_rate': 0.15,
+                            'learning_rate': 0.001
+                        }
+                except Exception as e:
+                    st.warning(f"⚠️ 获取策略进化跟踪器数据失败: {e}")
+            
+            # 如果都没有，返回默认的空数据
             return {
                 'generation_count': 0,
                 'best_fitness': 0.0,
                 'avg_fitness': 0.0,
-                'mutation_rate': 0.15,
-                'training_rounds': 0,
-                'avg_reward': 0.0,
+                'population_size': 0,
+                'evolution_history': [],
+                'last_evolution_date': None,
+                'is_running': False,
+                'training_progress': 0.0,
                 'exploration_rate': 0.15,
-                'learning_rate': 0.001,
-                'training_progress': 0.0
+                'learning_rate': 0.001
             }
             
         except Exception as e:
@@ -2405,12 +2101,13 @@ class JessePlusWebInterface:
                 'generation_count': 0,
                 'best_fitness': 0.0,
                 'avg_fitness': 0.0,
-                'mutation_rate': 0.15,
-                'training_rounds': 0,
-                'avg_reward': 0.0,
+                'population_size': 0,
+                'evolution_history': [],
+                'last_evolution_date': None,
+                'is_running': False,
+                'training_progress': 0.0,
                 'exploration_rate': 0.15,
-                'learning_rate': 0.001,
-                'training_progress': 0.0
+                'learning_rate': 0.001
             }
     
     def render_trading_records(self):

@@ -466,18 +466,23 @@ class JessePlusWebInterface:
         </div>
         """, unsafe_allow_html=True)
         
-        # 系统控制
+        # 系统控制 - 融合启动和停止按钮
         st.sidebar.markdown("### 🖥️ 系统控制")
         
-        col1, col2 = st.sidebar.columns(2)
-        with col1:
-            if st.button("🟢 启动系统", use_container_width=True, key="start_system"):
-                st.success("✅ 系统已启动")
-                st.rerun()
+        # 获取当前系统状态
+        system_status = getattr(st.session_state, 'system_status', '🔴 已停止')
+        is_running = '🟢 运行中' in system_status
         
-        with col2:
-            if st.button("🔴 停止系统", use_container_width=True, key="stop_system"):
+        # 创建切换按钮
+        if is_running:
+            if st.sidebar.button("🔴 停止系统", use_container_width=True, key="toggle_system"):
+                st.session_state.system_status = "🔴 已停止"
                 st.warning("⚠️ 系统已停止")
+                st.rerun()
+        else:
+            if st.sidebar.button("🟢 启动系统", use_container_width=True, key="toggle_system"):
+                st.session_state.system_status = "🟢 运行中"
+                st.success("✅ 系统已启动")
                 st.rerun()
         
         # 监控设置
@@ -606,12 +611,14 @@ class JessePlusWebInterface:
             st.success("✅ 风险设置已保存")
             st.rerun()
         
-        with col2:
+        # 风险控制按钮 - 修复col3未定义错误
+        col1, col2 = st.sidebar.columns(2)
+        with col1:
             if st.button("🔄 重置风险设置", use_container_width=True, key="reset_risk_settings"):
                 st.warning("⚠️ 风险设置已重置")
                 st.rerun()
         
-        with col3:
+        with col2:
             if st.button("📊 风险报告", use_container_width=True, key="risk_report_1"):
                 st.info("📊 生成风险报告")
         

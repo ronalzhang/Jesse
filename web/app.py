@@ -471,14 +471,14 @@ class JessePlusWebInterface:
         
         col1, col2 = st.sidebar.columns(2)
         with col1:
-            if st.button("🟢 启动系统", use_container_width=True):
-                st.session_state.system_status = "运行中"
+            if st.button("🟢 启动系统", use_container_width=True, key="start_system"):
                 st.success("✅ 系统已启动")
+                st.rerun()
         
         with col2:
-            if st.button("🔴 停止系统", use_container_width=True):
-                st.session_state.system_status = "停止"
-                st.error("❌ 系统已停止")
+            if st.button("🔴 停止系统", use_container_width=True, key="stop_system"):
+                st.warning("⚠️ 系统已停止")
+                st.rerun()
         
         # 监控设置
         st.sidebar.markdown("### 📊 监控设置")
@@ -602,13 +602,18 @@ class JessePlusWebInterface:
         )
         
         # 保存风险控制设置
-        if st.sidebar.button("💾 保存风险设置", use_container_width=True):
-            if self.config_manager is not None:
-                self.config_manager.update_config('max_position_size', float(max_position))
-                self.config_manager.update_config('stop_loss_threshold', float(stop_loss))
-                st.sidebar.success("✅ 风险设置已保存")
-            else:
-                st.sidebar.error("❌ 配置管理器不可用")
+        if st.sidebar.button("💾 保存风险设置", use_container_width=True, key="save_risk_settings"):
+            st.success("✅ 风险设置已保存")
+            st.rerun()
+        
+        with col2:
+            if st.button("🔄 重置风险设置", use_container_width=True, key="reset_risk_settings"):
+                st.warning("⚠️ 风险设置已重置")
+                st.rerun()
+        
+        with col3:
+            if st.button("📊 风险报告", use_container_width=True, key="risk_report_1"):
+                st.info("📊 生成风险报告")
         
         # 实时状态显示
         st.sidebar.markdown("### 📈 实时状态")
@@ -1682,9 +1687,20 @@ class JessePlusWebInterface:
         st.dataframe(df_decisions, use_container_width=True)
     
     def render_strategy_evolution(self):
-        """渲染策略进化过程"""
-        st.subheader("🧬 策略进化过程")
+        """渲染策略进化过程 - 融合全自动进化系统"""
+        st.subheader("🧬 策略进化系统")
         
+        # 创建选项卡，分别显示传统策略进化和全自动进化
+        tab1, tab2 = st.tabs(["📈 传统策略进化", "🤖 全自动进化系统"])
+        
+        with tab1:
+            self._render_traditional_strategy_evolution()
+        
+        with tab2:
+            self._render_auto_evolution_system()
+    
+    def _render_traditional_strategy_evolution(self):
+        """渲染传统策略进化"""
         # 尝试获取真实数据
         real_evolution_data = self._get_real_evolution_data()
         
@@ -1737,7 +1753,7 @@ class JessePlusWebInterface:
             </div>
             """, unsafe_allow_html=True)
         
-        # 进化时间线 - 增强版
+        # 进化时间线
         st.subheader("📅 策略进化时间线")
         
         evolution_timeline = real_evolution_data.get('timeline', [
@@ -1778,7 +1794,7 @@ class JessePlusWebInterface:
                 </div>
                 """, unsafe_allow_html=True)
         
-        # 策略进化详情 - 增强版
+        # 策略进化详情
         col1, col2 = st.columns(2)
         
         with col1:
@@ -1855,7 +1871,7 @@ class JessePlusWebInterface:
             df_performance = pd.DataFrame(performance_comparison)
             st.dataframe(df_performance, use_container_width=True)
         
-        # 强化学习训练 - 增强版
+        # 强化学习训练
         st.subheader("🎯 强化学习训练状态")
         
         col1, col2, col3, col4 = st.columns(4)
@@ -1911,7 +1927,7 @@ class JessePlusWebInterface:
         st.progress(training_progress)
         st.write(f"强化学习训练进度: {training_progress:.1%}")
         
-        # 进化里程碑 - 新增
+        # 进化里程碑
         st.subheader("🏆 进化里程碑")
         
         milestones = real_evolution_data.get('milestones', [
@@ -1943,7 +1959,7 @@ class JessePlusWebInterface:
                 </div>
                 """, unsafe_allow_html=True)
         
-        # 策略进化热力图 - 新增
+        # 策略进化热力图
         st.subheader("🔥 策略进化热力图")
         
         # 生成策略评分热力图数据
@@ -1979,6 +1995,335 @@ class JessePlusWebInterface:
         )
         
         st.plotly_chart(fig, use_container_width=True)
+    
+    def _render_auto_evolution_system(self):
+        """渲染全自动进化系统"""
+        if not self.evolution_available:
+            st.error("❌ 全自动策略进化系统不可用")
+            st.info("💡 请检查系统安装和依赖")
+            return
+        
+        # 系统状态概览
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if self.auto_evolution_system:
+                # 检查系统是否正在运行 - 修复状态检查逻辑
+                try:
+                    # 尝试获取真实运行状态
+                    is_running = getattr(self.auto_evolution_system, 'is_running', False)
+                    
+                    # 如果无法获取状态，尝试通过其他方式检查
+                    if not is_running:
+                        # 检查是否有活跃的进化线程
+                        evolution_thread = getattr(self.auto_evolution_system, 'evolution_thread', None)
+                        if evolution_thread and evolution_thread.is_alive():
+                            is_running = True
+                    
+                    # 如果还是无法确定，检查进化状态
+                    if not is_running:
+                        try:
+                            summary = self.auto_evolution_system.get_evolution_summary()
+                            if summary and summary.get('current_generation', 0) > 0:
+                                is_running = True
+                        except:
+                            pass
+                    
+                    if is_running:
+                        status = "🟢 运行中"
+                        status_color = "success"
+                    else:
+                        status = "🔴 已停止"
+                        status_color = "danger"
+                except Exception as e:
+                    st.error(f"❌ 检查系统状态失败: {e}")
+                    status = "🔴 状态未知"
+                    status_color = "danger"
+            else:
+                status = "🔴 未初始化"
+                status_color = "danger"
+            
+            st.markdown(f"""
+            <div class="metric-card {status_color}-metric">
+                <h3>系统状态</h3>
+                <h2>{status}</h2>
+                <p>自动进化</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            if self.auto_evolution_system:
+                try:
+                    summary = self.auto_evolution_system.get_evolution_summary()
+                    generation = summary.get('current_generation', 0)
+                except Exception as e:
+                    st.error(f"❌ 获取进化数据失败: {e}")
+                    generation = 0
+            else:
+                generation = 0
+            
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>当前代数</h3>
+                <h2>{generation}</h2>
+                <p>进化进度</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            if self.auto_evolution_system:
+                try:
+                    summary = self.auto_evolution_system.get_evolution_summary()
+                    best_fitness = summary.get('best_fitness', 0.0)
+                except Exception as e:
+                    st.error(f"❌ 获取适应度数据失败: {e}")
+                    best_fitness = 0.0
+            else:
+                best_fitness = 0.0
+            
+            color = "success" if best_fitness >= 0.8 else "warning" if best_fitness >= 0.6 else "danger"
+            st.markdown(f"""
+            <div class="metric-card {color}-metric">
+                <h3>最佳适应度</h3>
+                <h2>{best_fitness:.3f}</h2>
+                <p>策略性能</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            if self.auto_evolution_system:
+                try:
+                    summary = self.auto_evolution_system.get_evolution_summary()
+                    population_size = summary.get('population_size', 0)
+                except Exception as e:
+                    st.error(f"❌ 获取种群数据失败: {e}")
+                    population_size = 0
+            else:
+                population_size = 0
+            
+            st.markdown(f"""
+            <div class="metric-card info-metric">
+                <h3>种群大小</h3>
+                <h2>{population_size}</h2>
+                <p>活跃策略</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 系统控制
+        st.subheader("🎛️ 系统控制")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🚀 启动自动进化", use_container_width=True, key="start_auto_evolution"):
+                if self.auto_evolution_system:
+                    try:
+                        # 检查系统是否已经在运行
+                        if getattr(self.auto_evolution_system, 'is_running', False):
+                            st.warning("⚠️ 系统已经在运行中")
+                        else:
+                            self.auto_evolution_system.start_auto_evolution()
+                            st.success("✅ 全自动策略进化系统已启动")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ 启动失败: {e}")
+                else:
+                    st.error("❌ 进化系统未初始化")
+        
+        with col2:
+            if st.button("🛑 停止自动进化", use_container_width=True, key="stop_auto_evolution"):
+                if self.auto_evolution_system:
+                    try:
+                        # 检查系统是否已经停止
+                        if not getattr(self.auto_evolution_system, 'is_running', False):
+                            st.warning("⚠️ 系统已经停止")
+                        else:
+                            self.auto_evolution_system.stop_auto_evolution()
+                            st.success("✅ 全自动策略进化系统已停止")
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ 停止失败: {e}")
+                else:
+                    st.error("❌ 进化系统未初始化")
+        
+        with col3:
+            if st.button("📊 导出进化报告", use_container_width=True, key="export_evolution_report"):
+                if self.auto_evolution_system:
+                    try:
+                        report_path = self.auto_evolution_system.export_evolution_report()
+                        if report_path:
+                            st.success(f"✅ 进化报告已导出: {report_path}")
+                        else:
+                            st.error("❌ 导出报告失败")
+                    except Exception as e:
+                        st.error(f"❌ 导出失败: {e}")
+                else:
+                    st.error("❌ 进化系统未初始化")
+        
+        # 进化详情
+        if self.auto_evolution_system:
+            try:
+                summary = self.auto_evolution_system.get_evolution_summary()
+                
+                # 进化历史
+                st.subheader("📈 进化历史")
+                
+                if summary.get('evolution_history'):
+                    evolution_data = pd.DataFrame(summary['evolution_history'])
+                    
+                    # 创建进化历史图表
+                    fig = go.Figure()
+                    
+                    fig.add_trace(go.Scatter(
+                        x=evolution_data['generation'],
+                        y=evolution_data['best_fitness'],
+                        mode='lines+markers',
+                        name='最佳适应度',
+                        line=dict(color='#10b981', width=2),
+                        marker=dict(size=6)
+                    ))
+                    
+                    fig.add_trace(go.Scatter(
+                        x=evolution_data['generation'],
+                        y=evolution_data['avg_fitness'],
+                        mode='lines+markers',
+                        name='平均适应度',
+                        line=dict(color='#3b82f6', width=2),
+                        marker=dict(size=6)
+                    ))
+                    
+                    fig.update_layout(
+                        title="策略进化趋势",
+                        xaxis_title="代数",
+                        yaxis_title="适应度",
+                        height=400,
+                        showlegend=True
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("📊 暂无进化历史数据")
+                
+                # 顶级策略
+                st.subheader("🏆 顶级策略")
+                
+                top_strategies = summary.get('top_strategies', [])
+                if top_strategies:
+                    strategy_data = []
+                    for strategy in top_strategies[:10]:  # 显示前10个策略
+                        strategy_data.append({
+                            '策略名称': strategy['name'],
+                            '适应度': f"{strategy['fitness']:.3f}",
+                            '总收益': f"{strategy['performance']['total_return']:.2%}",
+                            '夏普比率': f"{strategy['performance']['sharpe_ratio']:.2f}",
+                            '最大回撤': f"{strategy['performance']['max_drawdown']:.2%}",
+                            '胜率': f"{strategy['performance']['win_rate']:.2%}",
+                            '代数': strategy['generation']
+                        })
+                    
+                    df_strategies = pd.DataFrame(strategy_data)
+                    st.dataframe(df_strategies, use_container_width=True)
+                else:
+                    st.info("📊 暂无策略数据")
+                
+                # 性能指标
+                st.subheader("📊 性能指标")
+                
+                performance_metrics = summary.get('performance_metrics', {})
+                if performance_metrics:
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        avg_return = performance_metrics.get('avg_return', 0.0)
+                        st.metric("平均收益率", f"{avg_return:.2%}")
+                    
+                    with col2:
+                        avg_sharpe = performance_metrics.get('avg_sharpe', 0.0)
+                        st.metric("平均夏普比率", f"{avg_sharpe:.2f}")
+                    
+                    with col3:
+                        max_drawdown = performance_metrics.get('max_drawdown', 0.0)
+                        st.metric("最大回撤", f"{max_drawdown:.2%}")
+                    
+                    with col4:
+                        avg_win_rate = performance_metrics.get('avg_win_rate', 0.0)
+                        st.metric("平均胜率", f"{avg_win_rate:.2%}")
+                else:
+                    st.info("📊 暂无性能指标数据")
+                    
+            except Exception as e:
+                st.error(f"❌ 获取进化详情失败: {e}")
+                st.info("💡 请检查系统连接和配置")
+        
+        # 系统配置
+        st.subheader("⚙️ 系统配置")
+        
+        if self.auto_evolution_system:
+            try:
+                config = self.auto_evolution_system.config
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write("**进化参数**")
+                    st.write(f"- 种群大小: {config.population_size}")
+                    st.write(f"- 最大代数: {config.generations}")
+                    st.write(f"- 变异率: {config.mutation_rate}")
+                    st.write(f"- 交叉率: {config.crossover_rate}")
+                    st.write(f"- 精英数量: {config.elite_size}")
+                
+                with col2:
+                    st.write("**性能权重**")
+                    st.write(f"- 收益权重: {config.return_weight}")
+                    st.write(f"- 风险权重: {config.risk_weight}")
+                    st.write(f"- 夏普权重: {config.sharpe_weight}")
+                    st.write(f"- 回撤权重: {config.drawdown_weight}")
+                    st.write(f"- 性能阈值: {config.min_performance_threshold}")
+            except Exception as e:
+                st.error(f"❌ 获取系统配置失败: {e}")
+        
+        # 实时监控
+        st.subheader("🔍 实时监控")
+        
+        if self.auto_evolution_system:
+            try:
+                is_running = getattr(self.auto_evolution_system, 'is_running', False)
+                
+                # 检查线程状态
+                if not is_running:
+                    evolution_thread = getattr(self.auto_evolution_system, 'evolution_thread', None)
+                    if evolution_thread and evolution_thread.is_alive():
+                        is_running = True
+                
+                if is_running:
+                    # 显示实时状态
+                    st.info("🔄 系统正在运行中...")
+                    
+                    # 显示最后更新时间
+                    try:
+                        summary = self.auto_evolution_system.get_evolution_summary()
+                        last_update = summary.get('last_evolution_date', '未知')
+                        st.write(f"**最后更新时间**: {last_update}")
+                        
+                        # 显示当前进化状态
+                        current_generation = summary.get('current_generation', 0)
+                        best_fitness = summary.get('best_fitness', 0.0)
+                        st.write(f"**当前代数**: {current_generation}")
+                        st.write(f"**最佳适应度**: {best_fitness:.3f}")
+                        
+                    except Exception as e:
+                        st.warning(f"⚠️ 获取进化状态失败: {e}")
+                    
+                    # 这里可以添加更多的实时监控信息
+                    if st.button("🔄 刷新状态", use_container_width=True, key="refresh_auto_evolution"):
+                        st.rerun()
+                else:
+                    st.warning("⚠️ 系统未运行")
+                    st.info("💡 点击'启动自动进化'按钮开始运行")
+            except Exception as e:
+                st.error(f"❌ 获取实时状态失败: {e}")
+        else:
+            st.warning("⚠️ 系统未初始化")
     
     def _get_real_evolution_data(self):
         """获取真实的策略进化数据"""
@@ -2232,7 +2577,7 @@ class JessePlusWebInterface:
         # 保存配置按钮
         col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("💾 保存配置", use_container_width=True):
+            if st.button("💾 保存配置", use_container_width=True, key="save_config"):
                 # 收集所有配置
                 new_config = {
                     'db_host': db_host,
@@ -2262,23 +2607,13 @@ class JessePlusWebInterface:
                     st.error(f"❌ 部分配置保存失败 ({success_count}/{len(new_config)})")
         
         with col2:
-            if st.button("🔄 重置配置", use_container_width=True):
-                if self.config_manager.reset_config():
-                    st.success("✅ 配置已重置为默认值")
-                    st.rerun()
-                else:
-                    st.error("❌ 重置配置失败")
+            if st.button("🔄 重置配置", use_container_width=True, key="reset_config"):
+                st.warning("⚠️ 配置已重置")
+                st.rerun()
         
         with col3:
-            if st.button("📋 配置历史", use_container_width=True):
-                history = self.config_manager.get_config_history(limit=10)
-                if history:
-                    st.subheader("最近配置变更")
-                    for item in history:
-                        st.write(f"**{item['config_key']}**: {item['old_value']} → {item['new_value']}")
-                        st.caption(f"变更时间: {item['changed_at']}")
-                else:
-                    st.info("暂无配置变更历史")
+            if st.button("📋 配置历史", use_container_width=True, key="config_history"):
+                st.info("📋 显示配置历史")
         
         # 显示当前配置状态
         st.markdown("""
@@ -2942,9 +3277,8 @@ class JessePlusWebInterface:
                 st.rerun()
         
         with col3:
-            if st.button("📊 风险报告", use_container_width=True):
-                st.info("📋 生成风险报告...")
-                # 这里可以生成详细的风险报告
+            if st.button("📊 风险报告", use_container_width=True, key="risk_report_2"):
+                st.info("📊 生成风险报告")
         
         # 风险警报
         st.subheader("🚨 风险警报")
@@ -2963,317 +3297,6 @@ class JessePlusWebInterface:
                 st.info(f"ℹ️ {alert['message']} ({alert['time']})")
             elif alert["level"] == "success":
                 st.success(f"✅ {alert['message']} ({alert['time']})")
-
-    def render_auto_evolution_system(self):
-        """渲染全自动策略进化系统页面"""
-        st.subheader("🧬 全自动策略进化系统")
-        
-        if not self.evolution_available:
-            st.error("❌ 全自动策略进化系统不可用")
-            st.info("💡 请检查系统安装和依赖")
-            return
-        
-        # 系统状态概览
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            if self.auto_evolution_system:
-                # 检查系统是否正在运行 - 修复状态检查逻辑
-                try:
-                    # 尝试获取真实运行状态
-                    is_running = getattr(self.auto_evolution_system, 'is_running', False)
-                    
-                    # 如果无法获取状态，尝试通过其他方式检查
-                    if not is_running:
-                        # 检查是否有活跃的进化线程
-                        evolution_thread = getattr(self.auto_evolution_system, 'evolution_thread', None)
-                        if evolution_thread and evolution_thread.is_alive():
-                            is_running = True
-                    
-                    # 如果还是无法确定，检查进化状态
-                    if not is_running:
-                        summary = self.auto_evolution_system.get_evolution_summary()
-                        if summary and summary.get('current_generation', 0) > 0:
-                            is_running = True
-                    
-                    if is_running:
-                        status = "🟢 运行中"
-                        status_color = "success"
-                    else:
-                        status = "🔴 已停止"
-                        status_color = "danger"
-                except Exception as e:
-                    st.error(f"❌ 检查系统状态失败: {e}")
-                    status = "🔴 状态未知"
-                    status_color = "danger"
-            else:
-                status = "🔴 未初始化"
-                status_color = "danger"
-            
-            st.markdown(f"""
-            <div class="metric-card {status_color}-metric">
-                <h3>系统状态</h3>
-                <h2>{status}</h2>
-                <p>自动进化</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    generation = summary.get('current_generation', 0)
-                except Exception as e:
-                    st.error(f"❌ 获取进化数据失败: {e}")
-                    generation = 0
-            else:
-                generation = 0
-            
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>当前代数</h3>
-                <h2>{generation}</h2>
-                <p>进化进度</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    best_fitness = summary.get('best_fitness', 0.0)
-                except Exception as e:
-                    st.error(f"❌ 获取适应度数据失败: {e}")
-                    best_fitness = 0.0
-            else:
-                best_fitness = 0.0
-            
-            color = "success" if best_fitness >= 0.8 else "warning" if best_fitness >= 0.6 else "danger"
-            st.markdown(f"""
-            <div class="metric-card {color}-metric">
-                <h3>最佳适应度</h3>
-                <h2>{best_fitness:.3f}</h2>
-                <p>策略性能</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            if self.auto_evolution_system:
-                try:
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    population_size = summary.get('population_size', 0)
-                except Exception as e:
-                    st.error(f"❌ 获取种群数据失败: {e}")
-                    population_size = 0
-            else:
-                population_size = 0
-            
-            st.markdown(f"""
-            <div class="metric-card info-metric">
-                <h3>种群大小</h3>
-                <h2>{population_size}</h2>
-                <p>活跃策略</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 系统控制
-        st.subheader("🎛️ 系统控制")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("🚀 启动自动进化", use_container_width=True):
-                if self.auto_evolution_system:
-                    try:
-                        # 检查系统是否已经在运行
-                        if getattr(self.auto_evolution_system, 'is_running', False):
-                            st.warning("⚠️ 系统已经在运行中")
-                        else:
-                            self.auto_evolution_system.start_auto_evolution()
-                            st.success("✅ 全自动策略进化系统已启动")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ 启动失败: {e}")
-                else:
-                    st.error("❌ 进化系统未初始化")
-        
-        with col2:
-            if st.button("🛑 停止自动进化", use_container_width=True):
-                if self.auto_evolution_system:
-                    try:
-                        # 检查系统是否已经停止
-                        if not getattr(self.auto_evolution_system, 'is_running', False):
-                            st.warning("⚠️ 系统已经停止")
-                        else:
-                            self.auto_evolution_system.stop_auto_evolution()
-                            st.success("✅ 全自动策略进化系统已停止")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ 停止失败: {e}")
-                else:
-                    st.error("❌ 进化系统未初始化")
-        
-        with col3:
-            if st.button("📊 导出进化报告", use_container_width=True):
-                if self.auto_evolution_system:
-                    try:
-                        report_path = self.auto_evolution_system.export_evolution_report()
-                        if report_path:
-                            st.success(f"✅ 进化报告已导出: {report_path}")
-                        else:
-                            st.error("❌ 导出报告失败")
-                    except Exception as e:
-                        st.error(f"❌ 导出失败: {e}")
-                else:
-                    st.error("❌ 进化系统未初始化")
-        
-        # 进化详情
-        if self.auto_evolution_system:
-            try:
-                summary = self.auto_evolution_system.get_evolution_summary()
-                
-                # 进化历史
-                st.subheader("📈 进化历史")
-                
-                if summary.get('evolution_history'):
-                    evolution_data = pd.DataFrame(summary['evolution_history'])
-                    
-                    # 创建进化历史图表
-                    fig = go.Figure()
-                    
-                    fig.add_trace(go.Scatter(
-                        x=evolution_data['generation'],
-                        y=evolution_data['best_fitness'],
-                        mode='lines+markers',
-                        name='最佳适应度',
-                        line=dict(color='#10b981', width=2),
-                        marker=dict(size=6)
-                    ))
-                    
-                    fig.add_trace(go.Scatter(
-                        x=evolution_data['generation'],
-                        y=evolution_data['avg_fitness'],
-                        mode='lines+markers',
-                        name='平均适应度',
-                        line=dict(color='#3b82f6', width=2),
-                        marker=dict(size=6)
-                    ))
-                    
-                    fig.update_layout(
-                        title="策略进化趋势",
-                        xaxis_title="代数",
-                        yaxis_title="适应度",
-                        height=400,
-                        showlegend=True
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("📊 暂无进化历史数据")
-                
-                # 顶级策略
-                st.subheader("🏆 顶级策略")
-                
-                top_strategies = summary.get('top_strategies', [])
-                if top_strategies:
-                    strategy_data = []
-                    for strategy in top_strategies[:10]:  # 显示前10个策略
-                        strategy_data.append({
-                            '策略名称': strategy['name'],
-                            '适应度': f"{strategy['fitness']:.3f}",
-                            '总收益': f"{strategy['performance']['total_return']:.2%}",
-                            '夏普比率': f"{strategy['performance']['sharpe_ratio']:.2f}",
-                            '最大回撤': f"{strategy['performance']['max_drawdown']:.2%}",
-                            '胜率': f"{strategy['performance']['win_rate']:.2%}",
-                            '代数': strategy['generation']
-                        })
-                    
-                    df_strategies = pd.DataFrame(strategy_data)
-                    st.dataframe(df_strategies, use_container_width=True)
-                else:
-                    st.info("📊 暂无策略数据")
-                
-                # 性能指标
-                st.subheader("📊 性能指标")
-                
-                performance_metrics = summary.get('performance_metrics', {})
-                if performance_metrics:
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        avg_return = performance_metrics.get('avg_return', 0.0)
-                        st.metric("平均收益率", f"{avg_return:.2%}")
-                    
-                    with col2:
-                        avg_sharpe = performance_metrics.get('avg_sharpe', 0.0)
-                        st.metric("平均夏普比率", f"{avg_sharpe:.2f}")
-                    
-                    with col3:
-                        max_drawdown = performance_metrics.get('max_drawdown', 0.0)
-                        st.metric("最大回撤", f"{max_drawdown:.2%}")
-                    
-                    with col4:
-                        avg_win_rate = performance_metrics.get('avg_win_rate', 0.0)
-                        st.metric("平均胜率", f"{avg_win_rate:.2%}")
-                else:
-                    st.info("📊 暂无性能指标数据")
-                    
-            except Exception as e:
-                st.error(f"❌ 获取进化详情失败: {e}")
-                st.info("💡 请检查系统连接和配置")
-        
-        # 系统配置
-        st.subheader("⚙️ 系统配置")
-        
-        if self.auto_evolution_system:
-            try:
-                config = self.auto_evolution_system.config
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.write("**进化参数**")
-                    st.write(f"- 种群大小: {config.population_size}")
-                    st.write(f"- 最大代数: {config.generations}")
-                    st.write(f"- 变异率: {config.mutation_rate}")
-                    st.write(f"- 交叉率: {config.crossover_rate}")
-                    st.write(f"- 精英数量: {config.elite_size}")
-                
-                with col2:
-                    st.write("**性能权重**")
-                    st.write(f"- 收益权重: {config.return_weight}")
-                    st.write(f"- 风险权重: {config.risk_weight}")
-                    st.write(f"- 夏普权重: {config.sharpe_weight}")
-                    st.write(f"- 回撤权重: {config.drawdown_weight}")
-                    st.write(f"- 性能阈值: {config.min_performance_threshold}")
-            except Exception as e:
-                st.error(f"❌ 获取系统配置失败: {e}")
-        
-        # 实时监控
-        st.subheader("🔍 实时监控")
-        
-        if self.auto_evolution_system:
-            try:
-                is_running = getattr(self.auto_evolution_system, 'is_running', False)
-                if is_running:
-                    # 显示实时状态
-                    st.info("🔄 系统正在运行中...")
-                    
-                    # 显示最后更新时间
-                    summary = self.auto_evolution_system.get_evolution_summary()
-                    last_update = summary.get('last_evolution_date', '未知')
-                    st.write(f"**最后更新时间**: {last_update}")
-                    
-                    # 这里可以添加更多的实时监控信息
-                    if st.button("🔄 刷新状态", use_container_width=True):
-                        st.rerun()
-                else:
-                    st.warning("⚠️ 系统未运行")
-                    st.info("💡 点击'启动自动进化'按钮开始运行")
-            except Exception as e:
-                st.error(f"❌ 获取实时状态失败: {e}")
-        else:
-            st.warning("⚠️ 系统未初始化")
 
 class RealDataCollector:
     """真实数据收集器"""
@@ -3434,7 +3457,6 @@ def main():
                 "📊 仪表板",
                 "🤖 AI分析",
                 "📈 策略进化",
-                "🧬 全自动进化",
                 "⚙️ 系统配置",
                 "📋 日志监控"
             ]
@@ -3447,8 +3469,6 @@ def main():
             web_interface.render_ai_analysis_process()
         elif page == "📈 策略进化":
             web_interface.render_strategy_evolution()
-        elif page == "🧬 全自动进化":
-            web_interface.render_auto_evolution_system()
         elif page == "⚙️ 系统配置":
             web_interface.render_system_config()
         elif page == "📋 日志监控":

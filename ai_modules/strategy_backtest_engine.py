@@ -371,9 +371,14 @@ class StrategyBacktestEngine:
                 if i < len(trades):
                     buy_time = trades[i-1]['timestamp']
                     sell_time = trades[i]['timestamp']
-                    duration = (sell_time - buy_time).total_seconds() / 3600  # 小时
-                    durations.append(duration)
-            
+                    
+                    # 增加类型检查，确保是时间戳对象
+                    if isinstance(buy_time, (datetime, pd.Timestamp)) and isinstance(sell_time, (datetime, pd.Timestamp)):
+                        duration = (sell_time - buy_time).total_seconds() / 3600  # 小时
+                        durations.append(duration)
+                    else:
+                        self.logger.warning(f"⚠️ 无效的交易时间戳，跳过持仓时间计算: buy_time={buy_time}, sell_time={sell_time}")
+
             return np.mean(durations) if durations else 0.0
             
         except Exception as e:

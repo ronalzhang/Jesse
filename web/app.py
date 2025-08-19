@@ -3138,56 +3138,15 @@ class DataGenerator:
         """生成交易量数据"""
         return [np.random.randint(1000, 5000) for _ in range(n_points)]
 
+from web.arbitrage_dashboard import render_arbitrage_dashboard
+
 def main():
     """主函数"""
     try:
-        # 创建Web界面实例
-        web_interface = JessePlusWebInterface()
-        
-        # 渲染界面
-        web_interface.render_header()
-        
-        # 获取侧边栏配置
-        config = web_interface.render_sidebar()
-        
-        # 确保config不为None
-        if config is None:
-            config = {}
-        
-        # 页面导航
-        page = st.sidebar.selectbox(
-            "选择页面",
-            [
-                "📊 仪表板",
-                "🤖 AI分析",
-                "📈 策略进化",
-                "⚙️ 系统配置",
-                "📋 日志监控"
-            ]
-        )
-        
-        # 根据选择的页面渲染相应内容
-        if page == "📊 仪表板":
-            web_interface.render_dashboard()
-        elif page == "🤖 AI分析":
-            web_interface.render_ai_analysis_process()
-        elif page == "📈 策略进化":
-            web_interface.render_strategy_evolution()
-        elif page == "⚙️ 系统配置":
-            web_interface.render_system_config()
-        elif page == "📋 日志监控":
-            web_interface.render_logs()
-        
-        # 自动刷新（仅在启用时）
-        if config.get("auto_refresh", True):
-            # 使用st.empty()来避免页面闪烁
-            with st.empty():
-                time.sleep(5)
-                st.rerun()
-                
+        render_arbitrage_dashboard()
     except Exception as e:
-        st.error(f"❌ 系统错误: {e}")
-        st.info("💡 请检查系统配置和网络连接")
+        st.error(f"❌ 系统主程序出现严重错误: {e}")
+        st.info("💡 请检查后台日志获取更多信息。")
         print(f"Web界面运行错误: {e}")
 
 if __name__ == "__main__":

@@ -39,6 +39,13 @@ class MarketDataCollector(LoggerMixin):
             # 获取交易所配置
             config = ExchangeConfig.get_exchange_config(exchange_name)
             
+            # 如果是OKX，增加特别日志
+            if exchange_name == 'okx':
+                if config.get('passphrase'):
+                    self.logger.info(f"🔍 正在为 {exchange_name} 配置Passphrase...")
+                else:
+                    self.logger.warning(f"⚠️ 为 {exchange_name} 配置的Passphrase为空或不存在！")
+
             # 创建交易所实例
             exchange_class = getattr(ccxt, exchange_name)
             exchange = exchange_class({

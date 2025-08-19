@@ -151,9 +151,18 @@ class MarketDataCollector(LoggerMixin):
                 'volume': ticker['baseVolume'],
                 'timestamp': datetime.now().isoformat()
             }
-            
+
+        except ccxt.AuthenticationError as e:
+            self.logger.error(f"❌ {exchange_name} 认证失败 (API Key可能无效或权限不足): {e}")
+            return None
+        except ccxt.NetworkError as e:
+            self.logger.error(f"❌ {exchange_name} 网络错误: {e}")
+            return None
+        except ccxt.ExchangeError as e:
+            self.logger.error(f"❌ {exchange_name} 交易所错误 (可能是交易对不支持): {e}")
+            return None
         except Exception as e:
-            self.logger.error(f"❌ 获取 {exchange_name} {symbol} 价格信息失败: {e}")
+            self.logger.error(f"❌ 获取 {exchange_name} {symbol} 价格信息时发生未知错误: {e}")
             return None
     
     def fetch_order_book(self, exchange_name: str, symbol: str, 

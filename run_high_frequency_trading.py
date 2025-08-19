@@ -166,15 +166,24 @@ class HighFrequencyTradingSystem:
         return True
     
     def _get_market_data(self) -> Dict:
-        """获取市场数据"""
-        market_data = {
-            'timestamp': datetime.now(),
-            'volatility': 0.02,  # 示例波动率
-            'trend': 'neutral',
-            'volume': 1000000
-        }
-        
-        return market_data
+        """获取所有配置的交易所和交易对的市场数据"""
+        all_market_data = {}
+        for exchange in self.config['exchanges']:
+            all_market_data[exchange] = {}
+            for pair in self.config['trading_pairs']:
+                try:
+                    # 尝试获取OHLCV数据，这是策略分析的基础
+                    ohlcv = self.market_data_collector.fetch_ohlcv(exchange, pair, timeframe='1m', limit=100)
+                    if ohlcv is not None and not ohlcv.empty:
+                        all_market_data[exchange][pair] = ohlcv
+                    else:
+                        # 即使获取失败，也保留一个空占位符，避免KeyError
+                        all_market_data[exchange][pair] = pd.DataFrame()
+                        self.logger.warning(f"⚠️ _get_market_data: 未能获取 {exchange}/{pair} 的OHLCV数据")
+                except Exception as e:
+                    self.logger.error(f"❌ _get_market_data: 获取 {exchange}/{pair} 数据时出错: {e}")
+                    all_market_data[exchange][pair] = pd.DataFrame()
+        return all_market_data
     
     def _execute_trading_strategies(self, market_data: Dict):
         """执行交易策略"""

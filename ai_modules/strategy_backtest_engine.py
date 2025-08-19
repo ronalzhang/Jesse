@@ -75,42 +75,61 @@ class StrategyBacktestEngine:
         try:
             # RSI
             if 'rsi_period' in strategy['parameters']:
-                data['rsi'] = self._calculate_rsi(data['close'], strategy['parameters']['rsi_period'])
+                rsi_period = max(1, int(strategy['parameters'].get('rsi_period', 14)))
+                data['rsi'] = self._calculate_rsi(data['close'], rsi_period)
             
             # 移动平均线
             if 'ma_short' in strategy['parameters'] and 'ma_long' in strategy['parameters']:
-                data['ma_short'] = data['close'].rolling(window=int(strategy['parameters']['ma_short'])).mean()
-                data['ma_long'] = data['close'].rolling(window=int(strategy['parameters']['ma_long'])).mean()
+                ma_short_period = max(1, int(strategy['parameters'].get('ma_short', 12)))
+                ma_long_period = max(1, int(strategy['parameters'].get('ma_long', 26)))
+                
+                # 确保短期均线周期小于长期均线周期
+                if ma_short_period >= ma_long_period:
+                    ma_short_period, ma_long_period = ma_long_period, ma_short_period
+                    if ma_short_period == ma_long_period:
+                        ma_long_period += 1
+                        
+                data['ma_short'] = data['close'].rolling(window=ma_short_period).mean()
+                data['ma_long'] = data['close'].rolling(window=ma_long_period).mean()
             
             # 布林带
             if 'bollinger_period' in strategy['parameters'] and 'bollinger_std' in strategy['parameters']:
-                period = int(strategy['parameters']['bollinger_period'])
-                std = strategy['parameters']['bollinger_std']
+                period = max(1, int(strategy['parameters'].get('bollinger_period', 20)))
+                std = strategy['parameters'].get('bollinger_std', 2)
                 data['bb_middle'] = data['close'].rolling(window=period).mean()
-                data['bb_upper'] = data['bb_middle'] + (data['close'].rolling(window=period).std() * std)
-                data['bb_lower'] = data['bb_middle'] - (data['close'].rolling(window=period).std() * std)
+                rolling_std = data['close'].rolling(window=period).std()
+                data['bb_upper'] = data['bb_middle'] + (rolling_std * std)
+                data['bb_lower'] = data['bb_middle'] - (rolling_std * std)
             
             # MACD
-            data['ema_12'] = data['close'].ewm(span=12).mean()
-            data['ema_26'] = data['close'].ewm(span=26).mean()
+            data['ema_12'] = data['close'].ewm(span=12, adjust=False).mean()
+            data['ema_26'] = data['close'].ewm(span=26, adjust=False).mean()
             data['macd'] = data['ema_12'] - data['ema_26']
-            data['macd_signal'] = data['macd'].ewm(span=9).mean()
+            data['macd_signal'] = data['macd'].ewm(span=9, adjust=False).mean()
             data['macd_histogram'] = data['macd'] - data['macd_signal']
             
-            return data
+            return data.fillna(0)
             
         except Exception as e:
             self.logger.error(f"❌ 添加技术指标失败: {e}")
-            return data
+            return data.fillna(0)
     
     def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
         """计算RSI"""
-        delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-        return rsi
+        try:
+            safe_period = max(1, int(period))
+            delta = prices.diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=safe_period).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=safe_period).mean()
+            
+            # 避免除以零
+            rs = gain / loss.replace(0, 0.000001)
+            
+            rsi = 100 - (100 / (1 + rs))
+            return rsi.fillna(50) # 用50填充初始的NaN值
+        except Exception as e:
+            self.logger.error(f"❌ 计算RSI失败: {e}")
+            return pd.Series(index=prices.index, data=50)
     
     def _generate_signals(self, data: pd.DataFrame, strategy: Dict[str, Any]) -> pd.Series:
         """生成交易信号"""

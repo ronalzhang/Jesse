@@ -125,9 +125,7 @@ class HighFrequencyStrategy:
                 return False
                 
             # 计算技术指标
-            ta = TA(data)
-            rsi = ta.RSI(14)
-            macd = ta.MACD(data)
+            rsi = TA.RSI(data, period=14)
             
             # 高频交易条件
             current_rsi = rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50
@@ -151,8 +149,7 @@ class HighFrequencyStrategy:
                 return False
                 
             # 计算技术指标
-            ta = TA(data)
-            rsi = ta.RSI(14)
+            rsi = TA.RSI(data, period=14)
             
             # 高频交易条件
             current_rsi = rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50
@@ -186,9 +183,8 @@ class HighFrequencyStrategy:
                 return False
                 
             # 计算移动平均线
-            ta = TA(data)
-            sma_5 = ta.SMA(5)
-            sma_20 = ta.SMA(20)
+            sma_5 = TA.SMA(data, period=5)
+            sma_20 = TA.SMA(data, period=20)
             
             # 动量条件：短期均线上穿长期均线
             if (sma_5.iloc[-1] > sma_20.iloc[-1] and 
@@ -208,9 +204,8 @@ class HighFrequencyStrategy:
                 return False
                 
             # 计算移动平均线
-            ta = TA(data)
-            sma_5 = ta.SMA(5)
-            sma_20 = ta.SMA(20)
+            sma_5 = TA.SMA(data, period=5)
+            sma_20 = TA.SMA(data, period=20)
             
             # 动量条件：短期均线下穿长期均线
             if (sma_5.iloc[-1] < sma_20.iloc[-1] and 

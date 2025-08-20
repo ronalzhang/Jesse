@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jesse+ Arbitrage Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Geist Mono', monospace;
+            background-color: #0a0a0a;
+            color: #f0f0f0;
+        }
+        .header-metric {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .price-matrix-card {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        .price-matrix-card:hover {
+            border-color: #00aaff;
+        }
+        .price-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .opportunity-highlight {
+            background-color: #00aaff;
+            color: #000;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 170, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0); }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-cyan-400">Jesse+ Arbitrage Terminal</h1>
+        <div class="flex space-x-4">
+            <div class="header-metric">Total Assets: <span class="font-bold text-white">$125,430</span> <span class="text-green-400">(+2.6%)</span></div>
+            <div class="header-metric">AI Accuracy: <span class="font-bold text-white">72%</span></div>
+        </div>
+    </header>
+
+    <!-- Price Matrix -->
+    <main id="price-matrix-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Crypto data will be dynamically inserted here -->
+    </main>
+
+    <!-- Arbitrage Opportunities -->
+    <footer id="opportunities-footer" class="mt-4 space-y-2">
+        <!-- Opportunity alerts will be dynamically inserted here -->
+    </footer>
+
+    <script>
+        // Mock data for demonstration
+        const mockData = {
+            'BTC/USDT': {
+                binance: { price: 68105.50, bid: 68105.40, ask: 68105.60 },
+                okx: { price: 68102.30, bid: 68102.20, ask: 68102.40 },
+                bitget: { price: 68106.80, bid: 68106.70, ask: 68106.90 },
+            },
+            'ETH/USDT': {
+                binance: { price: 3405.10, bid: 3405.00, ask: 3405.20 },
+                okx: { price: 3405.50, bid: 3405.40, ask: 3405.60 },
+                bitget: { price: 3404.90, bid: 3404.80, ask: 3405.00 },
+            },
+            'SOL/USDT': {
+                binance: { price: 165.20, bid: 165.18, ask: 165.22 },
+                okx: { price: 165.25, bid: 165.23, ask: 165.27 },
+                bitget: { price: 165.15, bid: 165.13, ask: 165.17 },
+            },
+        };
+
+        const arbitrageThreshold = 0.001; // 0.1%
+
+        function renderMatrix() {
+            const container = document.getElementById('price-matrix-container');
+            const footer = document.getElementById('opportunities-footer');
+            container.innerHTML = '';
+            footer.innerHTML = '';
+
+            // Create a card for each crypto pair
+            for (const pair in mockData) {
+                const pairData = mockData[pair];
+                const exchanges = Object.keys(pairData);
+                
+                const card = document.createElement('div');
+                card.className = 'price-matrix-card';
+                
+                let cardHTML = `<h2 class="text-xl font-bold mb-2">${pair}</h2>`;
+                cardHTML += '<div class="space-y-2">';
+
+                let prices = [];
+                for (const ex of exchanges) {
+                    prices.push({ name: ex, ...pairData[ex] });
+                    cardHTML += `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">${ex.toUpperCase()}</span>
+                            <span class="price-value">$${pairData[ex].price.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+                cardHTML += '</div>';
+                card.innerHTML = cardHTML;
+                container.appendChild(card);
+
+                // Check for arbitrage opportunities
+                findArbitrage(pair, prices, footer);
+            }
+        }
+
+        function findArbitrage(pair, prices, footer) {
+            for (let i = 0; i < prices.length; i++) {
+                for (let j = 0; j < prices.length; j++) {
+                    if (i === j) continue;
+
+                    const buyEx = prices[i];
+                    const sellEx = prices[j];
+
+                    // Can we buy on buyEx and sell on sellEx for a profit?
+                    if (sellEx.bid > buyEx.ask) {
+                        const spread = (sellEx.bid - buyEx.ask) / buyEx.ask;
+                        if (spread > arbitrageThreshold) {
+                            const opportunityDiv = document.createElement('div');
+                            opportunityDiv.className = 'p-3 rounded-lg opportunity-highlight flex justify-between items-center';
+                            opportunityDiv.innerHTML = `
+                                <div>
+                                    <span class="font-bold">[${pair}] Arbitrage Opportunity! (${(spread * 100).toFixed(2)}%)</span>
+                                    <span class="text-sm ml-2">Buy on ${buyEx.name.toUpperCase()} at $${buyEx.ask.toFixed(2)} -> Sell on ${sellEx.name.toUpperCase()} at $${sellEx.bid.toFixed(2)}</span>
+                                </div>
+                                <button class="bg-black text-white px-3 py-1 rounded">Execute</button>
+                            `;
+                            footer.appendChild(opportunityDiv);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Initial render
+        renderMatrix();
+
+        // Simulate real-time updates
+        setInterval(() => {
+            for (const pair in mockData) {
+                for (const ex in mockData[pair]) {
+                    const priceData = mockData[pair][ex];
+                    const change = (Math.random() - 0.5) * (priceData.price * 0.0005);
+                    priceData.price += change;
+                    priceData.bid += change;
+                    priceData.ask += change;
+                }
+            }
+            renderMatrix();
+        }, 2000);
+
+    </script>
+</body>
+</html>

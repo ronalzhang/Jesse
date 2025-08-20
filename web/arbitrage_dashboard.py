@@ -75,10 +75,10 @@ def render_arbitrage_dashboard():
                 pair_prices = []
                 for ex, data in st.session_state.mock_data[pair].items():
                     pair_prices.append({'name': ex, **data})
-                    st.markdown(f'<div class="flex justify-between items-center">
+                    st.markdown(f'''<div class="flex justify-between items-center">
                                     <span class="text-gray-400">{ex.upper()}</span>
                                     <span class="price-value">${data["price"]:.2f}</span>
-                                 </div>', unsafe_allow_html=True)
+                                 </div>''', unsafe_allow_html=True)
                 
                 st.markdown('</div></div>', unsafe_allow_html=True)
 

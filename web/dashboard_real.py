@@ -241,22 +241,55 @@ st.markdown("""
         box-shadow: 0 8px 24px 0 rgba(99, 102, 241, 0.4);
     }
     
-    /* Tab样式 */
+    /* Tab样式 - 高级优雅设计 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: rgba(30, 41, 59, 0.4);
-        padding: 0.5rem;
-        border-radius: 12px;
+        gap: 6px;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(10px);
+        padding: 0.375rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        padding: 0.75rem 1.75rem;
         font-weight: 500;
+        color: #94a3b8;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
     }
     
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #cbd5e1;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* 选中状态 - 高对比度白色背景 */
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        color: #0f172a;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 
+            0 4px 12px rgba(0, 0, 0, 0.15),
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+    
+    /* 选中状态底部指示条 */
+    .stTabs [aria-selected="true"]::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 3px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        border-radius: 2px 2px 0 0;
     }
     
     /* DataFrames样式 */
@@ -368,19 +401,34 @@ st.markdown("""
             touch-action: manipulation;
         }
         
-        /* Tab优化 */
+        /* Tab移动端优化 */
         .stTabs [data-baseweb="tab-list"] {
             gap: 4px;
             padding: 0.25rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+            display: none;
         }
         
         .stTabs [data-baseweb="tab"] {
-            padding: 0.625rem 1rem;
+            padding: 0.625rem 1.25rem;
             font-size: 0.875rem;
             white-space: nowrap;
             min-width: fit-content;
+        }
+        
+        /* 选中状态在移动端更明显 */
+        .stTabs [aria-selected="true"] {
+            font-weight: 700;
+        }
+        
+        .stTabs [aria-selected="true"]::after {
+            width: 80%;
+            height: 2px;
         }
         
         /* 数据表格优化 */

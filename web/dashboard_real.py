@@ -265,6 +265,30 @@ st.markdown("""
         overflow: hidden;
     }
     
+    /* 状态栏网格布局 - 桌面4列，移动端2列 */
+    .status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* 概览页面网格布局 */
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* 策略进化网格布局 */
+    .evolution-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
     /* 现代化移动端设计 - 针对大屏手机优化 */
     @media (max-width: 1024px) {
         /* 平板和大屏手机 */
@@ -286,6 +310,15 @@ st.markdown("""
         .main-header p {
             font-size: 0.875rem;
             margin-top: 0.5rem;
+        }
+        
+        /* 所有网格强制2列布局 */
+        .status-grid,
+        .overview-grid,
+        .evolution-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
         }
         
         /* 移动端卡片网格 - 2列布局 */
@@ -413,29 +446,45 @@ st.markdown("""
     }
     
     @media (max-width: 430px) {
-        /* 小屏手机 - 单列布局 */
+        /* 小屏手机 - 保持双列布局 */
+        .status-grid,
+        .overview-grid,
+        .evolution-grid,
         .mobile-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
         }
         
         .main-header {
-            padding: 1.25rem 0.875rem;
+            padding: 1rem 0.75rem;
         }
         
         .main-header h1 {
-            font-size: 1.35rem;
-        }
-        
-        .metric-card {
-            padding: 0.875rem;
-        }
-        
-        .metric-card h2 {
             font-size: 1.25rem;
         }
         
+        .main-header p {
+            font-size: 0.75rem;
+        }
+        
+        .metric-card {
+            padding: 0.75rem;
+        }
+        
+        .metric-card h4 {
+            font-size: 0.7rem;
+        }
+        
+        .metric-card h2 {
+            font-size: 1.15rem;
+        }
+        
+        .metric-card p {
+            font-size: 0.7rem;
+        }
+        
         .horizontal-scroll-item {
-            flex: 0 0 90%;
+            flex: 0 0 48%;
         }
     }
     
@@ -659,22 +708,7 @@ class RealDashboard:
         </div>
         """, unsafe_allow_html=True)
         
-        # 交易模式提示
-        trading_mode = self.data_bridge.get_trading_mode()
-        if trading_mode == 'paper':
-            st.markdown("""
-            <div class="verification-mode">
-                📝 <strong>模拟盘模式</strong>: 当前使用真实市场数据进行策略验证，不进行真实资金交易。
-                策略表现优秀时可在侧边栏切换到实盘交易。
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div class="verification-mode" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%); border-left-color: #ef4444;">
-                💰 <strong>实盘交易模式</strong>: 当前使用真实资金进行交易，请密切关注风险！
-                如需调整策略可在侧边栏切换回模拟盘。
-            </div>
-            """, unsafe_allow_html=True)
+        # 交易模式提示已删除
         
         # 获取真实系统状态
         system_status = self.data_bridge.get_system_status()
@@ -682,7 +716,7 @@ class RealDashboard:
         evolution_status = self.data_bridge.get_evolution_status()
         exchange_config = self.data_bridge.get_exchange_config()
         
-        # 状态栏 - 响应式布局（桌面4列，移动端2列）
+        # 状态栏 - 使用 HTML Grid 强制双列布局
         status_icon = "🟢" if system_status['system_running'] else "🔴"
         status_text = "运行中" if system_status['system_running'] else "已停止"
         win_rate = trading_stats['win_rate'] * 100
@@ -692,44 +726,34 @@ class RealDashboard:
         best_fitness = evolution_status.get('best_fitness', 0)
         fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
         
-        # 使用 Streamlit 的响应式列布局
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-        
-        with col1:
-            st.markdown(f'''
+        # 使用 HTML Grid 布局，强制移动端双列
+        st.markdown(f'''
+        <div class="status-grid">
             <div class="metric-card {"success-card" if system_status["system_running"] else "danger-card"}">
                 <h4>系统状态</h4>
                 <h2>{status_icon} {status_text}</h2>
                 <p>{len(exchange_config["active_exchanges"])}个交易所 · 4个币种</p>
             </div>
-            ''', unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f'''
+            
             <div class="metric-card info-card">
                 <h4>今日交易</h4>
                 <h2>{trading_stats["daily_trades"]} 笔</h2>
                 <p>成功 {trading_stats["success_trades"]} · 失败 {trading_stats["failed_trades"]}</p>
             </div>
-            ''', unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f'''
+            
             <div class="metric-card {card_class}">
                 <h4>整体胜率</h4>
                 <h2>{win_rate:.1f}%</h2>
                 <p>共 {trading_stats["total_trades"]} 笔</p>
             </div>
-            ''', unsafe_allow_html=True)
-        
-        with col4:
-            st.markdown(f'''
+            
             <div class="metric-card {"success-card" if evolution_status["is_running"] else "warning-card"}">
                 <h4>策略进化</h4>
                 <h2>{evo_icon} {evo_status}</h2>
                 <p>第{evolution_status["current_generation"]}代 · {fitness_display}</p>
             </div>
-            ''', unsafe_allow_html=True)
+        </div>
+        ''', unsafe_allow_html=True)
     
     def render_sidebar(self):
         """侧边栏 - 真实控制"""
@@ -856,18 +880,34 @@ class RealDashboard:
         win_rate = trading_stats['win_rate'] * 100
         card_class = "success-card" if win_rate >= 60 else "warning-card"
         
-        # 响应式卡片布局 - 桌面4列，平板2列，手机2列
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f'<div class="metric-card info-card"><h4>今日交易</h4><h2>{trading_stats["daily_trades"]}</h2><p>验证模式</p></div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown(f'<div class="metric-card {card_class}"><h4>胜率</h4><h2>{win_rate:.1f}%</h2><p>目标: > 60%</p></div>', unsafe_allow_html=True)
-        
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown(f'<div class="metric-card success-card"><h4>成功交易</h4><h2>{trading_stats["success_trades"]}</h2><p>共{trading_stats["total_trades"]}笔</p></div>', unsafe_allow_html=True)
-        with col4:
-            st.markdown(f'<div class="metric-card warning-card"><h4>失败交易</h4><h2>{trading_stats["failed_trades"]}</h2><p>需要优化</p></div>', unsafe_allow_html=True)
+        # 使用 HTML Grid 强制双列布局
+        st.markdown(f'''
+        <div class="overview-grid">
+            <div class="metric-card info-card">
+                <h4>今日交易</h4>
+                <h2>{trading_stats["daily_trades"]}</h2>
+                <p>验证模式</p>
+            </div>
+            
+            <div class="metric-card {card_class}">
+                <h4>胜率</h4>
+                <h2>{win_rate:.1f}%</h2>
+                <p>目标: > 60%</p>
+            </div>
+            
+            <div class="metric-card success-card">
+                <h4>成功交易</h4>
+                <h2>{trading_stats["success_trades"]}</h2>
+                <p>共{trading_stats["total_trades"]}笔</p>
+            </div>
+            
+            <div class="metric-card warning-card">
+                <h4>失败交易</h4>
+                <h2>{trading_stats["failed_trades"]}</h2>
+                <p>需要优化</p>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -990,23 +1030,35 @@ class RealDashboard:
             st.info("💡 策略进化系统未运行，请在侧边栏启动")
             return
         
-        # 响应式指标卡片 - 2x2 网格
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("当前代数", evolution_status['current_generation'])
-        with col2:
-            st.metric("种群大小", evolution_status['population_size'])
+        # 使用 HTML Grid 强制双列布局
+        best_fitness = evolution_status['best_fitness']
+        fitness_text = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+        avg_fitness = evolution_status['avg_fitness']
+        avg_text = f"{avg_fitness:.3f}" if avg_fitness > 0 else "待计算"
         
-        col3, col4 = st.columns(2)
-        with col3:
-            # 适应度 = 综合评分，基于收益率、夏普比率、胜率等指标计算
-            best_fitness = evolution_status['best_fitness']
-            fitness_text = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
-            st.metric("最佳评分", fitness_text)
-        with col4:
-            avg_fitness = evolution_status['avg_fitness']
-            avg_text = f"{avg_fitness:.3f}" if avg_fitness > 0 else "待计算"
-            st.metric("平均评分", avg_text)
+        st.markdown(f'''
+        <div class="evolution-grid">
+            <div class="metric-card info-card">
+                <h4>当前代数</h4>
+                <h2>{evolution_status['current_generation']}</h2>
+            </div>
+            
+            <div class="metric-card info-card">
+                <h4>种群大小</h4>
+                <h2>{evolution_status['population_size']}</h2>
+            </div>
+            
+            <div class="metric-card success-card">
+                <h4>最佳评分</h4>
+                <h2>{fitness_text}</h2>
+            </div>
+            
+            <div class="metric-card warning-card">
+                <h4>平均评分</h4>
+                <h2>{avg_text}</h2>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
         
         st.markdown("---")
         

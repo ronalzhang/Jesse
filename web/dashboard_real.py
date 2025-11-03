@@ -284,7 +284,7 @@ st.markdown("""
             font-size: 0.8rem;
         }
         
-        /* 强制Streamlit columns为2列网格（仅用于指标卡片） */
+        /* 强制Streamlit columns为2列网格 */
         .stHorizontalBlock {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
@@ -295,9 +295,10 @@ st.markdown("""
             width: 100% !important;
         }
         
-        /* 表格容器在移动端单列显示 */
-        .stHorizontalBlock:has(.dataframe) {
-            grid-template-columns: 1fr !important;
+        /* 3列状态指示器在移动端保持3列 */
+        .stHorizontalBlock:has(> div:nth-child(3):last-child) {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.5rem !important;
         }
         
         .metric-card {
@@ -813,36 +814,40 @@ class RealDashboard:
         
         st.markdown("---")
         
-        # 双列布局显示表格
-        col1, col2 = st.columns(2)
+        # 策略进化表格 - 单独占一行
+        st.markdown("### 📈 策略进化状态")
+        evolution_status = self.data_bridge.get_evolution_status()
+        
+        if evolution_status['is_running'] and evolution_status['strategies']:
+            strategy_df = pd.DataFrame(evolution_status['strategies'][:5])
+            strategy_df['fitness'] = strategy_df['fitness'].apply(lambda x: f"{x:.3f}")
+            strategy_df['return'] = strategy_df['return'].apply(lambda x: f"{x:.2%}")
+            strategy_df['sharpe'] = strategy_df['sharpe'].apply(lambda x: f"{x:.2f}")
+            strategy_df['win_rate'] = strategy_df['win_rate'].apply(lambda x: f"{x:.2%}")
+            st.dataframe(strategy_df, use_container_width=True, height=250, hide_index=True)
+        else:
+            st.info("策略进化系统未运行或暂无数据")
+        
+        st.markdown("---")
+        
+        # 系统状态 - 三个状态指示卡片
+        st.markdown("### 🎯 系统状态")
+        system_status = self.data_bridge.get_system_status()
+        
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("### 📈 策略进化状态")
-            evolution_status = self.data_bridge.get_evolution_status()
-            
-            if evolution_status['is_running'] and evolution_status['strategies']:
-                strategy_df = pd.DataFrame(evolution_status['strategies'][:5])
-                strategy_df['fitness'] = strategy_df['fitness'].apply(lambda x: f"{x:.3f}")
-                strategy_df['return'] = strategy_df['return'].apply(lambda x: f"{x:.2%}")
-                strategy_df['sharpe'] = strategy_df['sharpe'].apply(lambda x: f"{x:.2f}")
-                strategy_df['win_rate'] = strategy_df['win_rate'].apply(lambda x: f"{x:.2%}")
-                st.dataframe(strategy_df, use_container_width=True, height=250, hide_index=True)
-            else:
-                st.info("策略进化系统未运行或暂无数据")
+            trading_status = "🟢 运行中" if system_status['trading_active'] else "🔴 已停止"
+            trading_class = "success-card" if system_status['trading_active'] else "danger-card"
+            st.markdown(f'<div class="metric-card {trading_class}"><h4>交易系统</h4><h2>{trading_status}</h2></div>', unsafe_allow_html=True)
         
         with col2:
-            st.markdown("### 🎯 系统状态")
-            system_status = self.data_bridge.get_system_status()
-            
-            status_data = {
-                '组件': ['交易系统', '策略进化', '数据采集'],
-                '状态': [
-                    '🟢 运行中' if system_status['trading_active'] else '🔴 已停止',
-                    '🟢 运行中' if system_status['evolution_active'] else '🔴 已停止',
-                    '🟢 正常'
-                ]
-            }
-            st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True, height=250)
+            evolution_status_text = "🟢 运行中" if system_status['evolution_active'] else "🔴 已停止"
+            evolution_class = "success-card" if system_status['evolution_active'] else "danger-card"
+            st.markdown(f'<div class="metric-card {evolution_class}"><h4>策略进化</h4><h2>{evolution_status_text}</h2></div>', unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown('<div class="metric-card success-card"><h4>数据采集</h4><h2>🟢 正常</h2></div>', unsafe_allow_html=True)
     
     def render_exchanges(self):
         """多交易所监控 - 真实数据（移动端优化）"""

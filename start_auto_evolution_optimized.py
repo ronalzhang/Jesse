@@ -62,7 +62,7 @@ class OptimizedEvolutionLauncher:
             max_drawdown_threshold=0.15,
             
             # 触发条件 - 关键优化
-            evolution_trigger_days=0.007,  # 10分钟 = 0.007天
+            evolution_trigger_days=0.125,  # 3小时 = 0.125天
         )
         
         self.logger.info("✅ 优化配置已创建")

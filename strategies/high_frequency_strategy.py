@@ -22,15 +22,15 @@ class HighFrequencyStrategy:
         self.logger = logging.getLogger(__name__)
         
         # 高频交易参数
-        self.min_holding_time = 30  # 最小持仓时间30秒
-        self.max_holding_time = 3600  # 最大持仓时间1小时
-        self.scalping_threshold = 0.005  # 高频交易阈值0.5%
-        self.arbitrage_threshold = 0.003  # 套利阈值0.3%
+        self.min_holding_time = 60  # 最小持仓时间30秒
+        self.max_holding_time = 1800  # 最大持仓时间1小时
+        self.scalping_threshold = 0.002  # 高频交易阈值0.5%
+        self.arbitrage_threshold = 0.001  # 套利阈值0.3%
         
         # 风险控制
         self.max_position_size = 0.3  # 最大仓位30%
-        self.stop_loss = 0.05  # 止损5%
-        self.take_profit = 0.08  # 止盈8%
+        self.stop_loss = 0.008  # 止损5%
+        self.take_profit = 0.015  # 止盈8%
         
         # 交易记录
         self.trades_today = []

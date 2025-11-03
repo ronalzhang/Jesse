@@ -298,14 +298,19 @@ class AutoStrategyEvolutionSystem:
                 self.logger.info(f"📊 进化状态更新 - 代数: {self.evolution_state['current_generation']}, 最佳适应度: {self.evolution_state['best_fitness']:.3f}")
                 
                 # 等待下一次检查
-                time.sleep(3600)  # 每小时检查一次
+                time.sleep(600)  # 每小时检查一次
                 
             except Exception as e:
                 self.logger.error(f"❌ 进化循环错误: {e}")
                 time.sleep(300)  # 错误后等待5分钟
     
     def _should_evolve(self) -> bool:
-        """检查是否需要进化"""
+        """检查是否需要进化
+        # 检查交易数量
+        recent_trades = self._count_recent_trades()
+        if recent_trades < 50:
+            self.logger.debug(f"交易数量不足: {recent_trades}/50")
+            return False"""
         # 检查时间间隔
         if self.evolution_state['last_evolution_date']:
             try:

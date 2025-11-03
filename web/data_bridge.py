@@ -117,11 +117,11 @@ class DataBridge:
         }
     
     def get_system_status(self) -> Dict:
-        """获取系统状态"""
+        """获取系统状态 - 从PM2获取真实状态"""
         try:
             # 检查进程是否运行
             import subprocess
-            result = subprocess.run(['pm2', 'jlist'], capture_output=True, text=True)
+            result = subprocess.run(['pm2', 'jlist'], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 processes = json.loads(result.stdout)
                 jesse_processes = [p for p in processes if 'jesse' in p.get('name', '').lower()]
@@ -131,21 +131,62 @@ class DataBridge:
                 evolution_running = any(p.get('pm2_env', {}).get('status') == 'online' 
                                       for p in jesse_processes if 'evolution' in p.get('name', ''))
                 
+                # 获取运行时间
+                uptime = 0
+                for p in jesse_processes:
+                    if p.get('pm2_env', {}).get('status') == 'online':
+                        pm_uptime = p.get('pm2_env', {}).get('pm_uptime', 0)
+                        if pm_uptime > uptime:
+                            uptime = pm_uptime
+                
                 return {
                     'trading_active': trading_running,
                     'evolution_active': evolution_running,
                     'system_running': trading_running or evolution_running,
-                    'uptime': max((p.get('pm2_env', {}).get('pm_uptime', 0) for p in jesse_processes), default=0)
+                    'uptime': uptime,
+                    'processes': jesse_processes
                 }
-        except:
-            pass
+        except Exception as e:
+            print(f"获取系统状态失败: {e}")
         
         return {
             'trading_active': False,
             'evolution_active': False,
             'system_running': False,
-            'uptime': 0
+            'uptime': 0,
+            'processes': []
         }
+    
+    def control_system(self, action: str, service: str = 'all') -> Dict:
+        """控制系统 - 启动/停止服务"""
+        try:
+            import subprocess
+            
+            if action == 'start':
+                if service == 'trading' or service == 'all':
+                    subprocess.run(['pm2', 'start', 'jesse-trading-system'], check=True)
+                if service == 'evolution' or service == 'all':
+                    subprocess.run(['pm2', 'start', 'jesse-auto-evolution'], check=True)
+                return {'success': True, 'message': f'已启动 {service}'}
+            
+            elif action == 'stop':
+                if service == 'trading' or service == 'all':
+                    subprocess.run(['pm2', 'stop', 'jesse-trading-system'], check=True)
+                if service == 'evolution' or service == 'all':
+                    subprocess.run(['pm2', 'stop', 'jesse-auto-evolution'], check=True)
+                return {'success': True, 'message': f'已停止 {service}'}
+            
+            elif action == 'restart':
+                if service == 'trading' or service == 'all':
+                    subprocess.run(['pm2', 'restart', 'jesse-trading-system'], check=True)
+                if service == 'evolution' or service == 'all':
+                    subprocess.run(['pm2', 'restart', 'jesse-auto-evolution'], check=True)
+                return {'success': True, 'message': f'已重启 {service}'}
+            
+        except Exception as e:
+            return {'success': False, 'message': f'操作失败: {e}'}
+        
+        return {'success': False, 'message': '未知操作'}
     
     def get_exchange_config(self) -> Dict:
         """获取交易所配置"""

@@ -318,20 +318,24 @@ st.markdown("""
         
         /* 状态指示器移动端优化 */
         .status-indicators {
-            gap: 1.5rem;
-            flex-wrap: wrap;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            padding: 0.75rem 0;
         }
         
         .status-item {
-            padding: 0.4rem 0.875rem;
+            padding: 0.4rem 0.75rem;
+            flex: 1;
+            justify-content: center;
         }
         
         .status-dot {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
         
         .status-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
     }
         

@@ -265,33 +265,8 @@ st.markdown("""
         overflow: hidden;
     }
     
-    /* 状态栏网格布局 - 桌面4列，移动端2列 */
-    .status-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    /* 概览页面网格布局 */
-    .overview-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    /* 策略进化网格布局 */
-    .evolution-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    /* 现代化移动端设计 - 针对大屏手机优化 */
-    @media (max-width: 1024px) {
-        /* 平板和大屏手机 */
+    /* 移动端强制双列布局 - 小屏幕设备 */
+    @media (max-width: 768px) {
         .main {
             padding: 0.5rem !important;
         }
@@ -299,55 +274,41 @@ st.markdown("""
         .main-header {
             padding: 1.5rem 1rem;
             margin-bottom: 1rem;
-            border-radius: 12px;
         }
         
         .main-header h1 {
-            font-size: 1.75rem;
-            line-height: 1.2;
+            font-size: 1.5rem;
         }
         
         .main-header p {
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
+            font-size: 0.8rem;
         }
         
-        /* 所有网格强制2列布局 */
-        .status-grid,
-        .overview-grid,
-        .evolution-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+        /* 强制Streamlit columns为2列网格 */
+        .stHorizontalBlock {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.75rem !important;
         }
         
-        /* 移动端卡片网格 - 2列布局 */
-        .mobile-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1rem;
+        .stHorizontalBlock > div {
+            width: 100% !important;
         }
         
         .metric-card {
-            padding: 1rem;
-            border-radius: 12px;
-            min-height: 100px;
+            padding: 0.875rem;
         }
         
         .metric-card h4 {
-            font-size: 0.75rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.7rem;
         }
         
         .metric-card h2 {
-            font-size: 1.5rem;
-            margin: 0.25rem 0;
+            font-size: 1.35rem;
         }
         
         .metric-card p {
-            font-size: 0.75rem;
-            line-height: 1.3;
+            font-size: 0.7rem;
         }
         
         /* 横向滚动容器 */
@@ -423,70 +384,7 @@ st.markdown("""
         }
     }
     
-    @media (max-width: 768px) {
-        /* 中等手机屏幕 */
-        .main-header h1 {
-            font-size: 1.5rem;
-        }
-        
-        .main-header p {
-            font-size: 0.8rem;
-        }
-        
-        .metric-card h2 {
-            font-size: 1.35rem;
-        }
-        
-        /* 紧凑模式 */
-        .verification-mode {
-            padding: 0.875rem;
-            font-size: 0.85rem;
-            border-radius: 10px;
-        }
-    }
-    
-    @media (max-width: 430px) {
-        /* 小屏手机 - 保持双列布局 */
-        .status-grid,
-        .overview-grid,
-        .evolution-grid,
-        .mobile-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-        }
-        
-        .main-header {
-            padding: 1rem 0.75rem;
-        }
-        
-        .main-header h1 {
-            font-size: 1.25rem;
-        }
-        
-        .main-header p {
-            font-size: 0.75rem;
-        }
-        
-        .metric-card {
-            padding: 0.75rem;
-        }
-        
-        .metric-card h4 {
-            font-size: 0.7rem;
-        }
-        
-        .metric-card h2 {
-            font-size: 1.15rem;
-        }
-        
-        .metric-card p {
-            font-size: 0.7rem;
-        }
-        
-        .horizontal-scroll-item {
-            flex: 0 0 48%;
-        }
-    }
+
     
     /* 触摸设备优化 */
     @media (hover: none) and (pointer: coarse) {
@@ -716,44 +614,54 @@ class RealDashboard:
         evolution_status = self.data_bridge.get_evolution_status()
         exchange_config = self.data_bridge.get_exchange_config()
         
-        # 状态栏 - 使用 HTML Grid 强制双列布局
-        status_icon = "🟢" if system_status['system_running'] else "🔴"
-        status_text = "运行中" if system_status['system_running'] else "已停止"
-        win_rate = trading_stats['win_rate'] * 100
-        card_class = "success-card" if win_rate >= 60 else "warning-card" if win_rate >= 50 else "danger-card"
-        evo_icon = "🟢" if evolution_status['is_running'] else "🔴"
-        evo_status = "运行中" if evolution_status['is_running'] else "已停止"
-        best_fitness = evolution_status.get('best_fitness', 0)
-        fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+        # 状态栏 - 桌面4列，移动端通过CSS控制为2列
+        col1, col2, col3, col4 = st.columns(4)
         
-        # 使用 HTML Grid 布局，强制移动端双列
-        st.markdown(f'''
-        <div class="status-grid">
-            <div class="metric-card {"success-card" if system_status["system_running"] else "danger-card"}">
+        with col1:
+            status_icon = "🟢" if system_status['system_running'] else "🔴"
+            status_text = "运行中" if system_status['system_running'] else "已停止"
+            status_class = "success-card" if system_status["system_running"] else "danger-card"
+            st.markdown(f'''
+            <div class="metric-card {status_class}">
                 <h4>系统状态</h4>
                 <h2>{status_icon} {status_text}</h2>
                 <p>{len(exchange_config["active_exchanges"])}个交易所 · 4个币种</p>
             </div>
-            
+            ''', unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f'''
             <div class="metric-card info-card">
                 <h4>今日交易</h4>
                 <h2>{trading_stats["daily_trades"]} 笔</h2>
                 <p>成功 {trading_stats["success_trades"]} · 失败 {trading_stats["failed_trades"]}</p>
             </div>
-            
+            ''', unsafe_allow_html=True)
+        
+        with col3:
+            win_rate = trading_stats['win_rate'] * 100
+            card_class = "success-card" if win_rate >= 60 else "warning-card" if win_rate >= 50 else "danger-card"
+            st.markdown(f'''
             <div class="metric-card {card_class}">
                 <h4>整体胜率</h4>
                 <h2>{win_rate:.1f}%</h2>
                 <p>共 {trading_stats["total_trades"]} 笔</p>
             </div>
-            
-            <div class="metric-card {"success-card" if evolution_status["is_running"] else "warning-card"}">
+            ''', unsafe_allow_html=True)
+        
+        with col4:
+            evo_icon = "🟢" if evolution_status['is_running'] else "🔴"
+            evo_status = "运行中" if evolution_status['is_running'] else "已停止"
+            best_fitness = evolution_status.get('best_fitness', 0)
+            fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+            evo_class = "success-card" if evolution_status["is_running"] else "warning-card"
+            st.markdown(f'''
+            <div class="metric-card {evo_class}">
                 <h4>策略进化</h4>
                 <h2>{evo_icon} {evo_status}</h2>
                 <p>第{evolution_status["current_generation"]}代 · {fitness_display}</p>
             </div>
-        </div>
-        ''', unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
     
     def render_sidebar(self):
         """侧边栏 - 真实控制"""
@@ -880,34 +788,17 @@ class RealDashboard:
         win_rate = trading_stats['win_rate'] * 100
         card_class = "success-card" if win_rate >= 60 else "warning-card"
         
-        # 使用 HTML Grid 强制双列布局
-        st.markdown(f'''
-        <div class="overview-grid">
-            <div class="metric-card info-card">
-                <h4>今日交易</h4>
-                <h2>{trading_stats["daily_trades"]}</h2>
-                <p>验证模式</p>
-            </div>
-            
-            <div class="metric-card {card_class}">
-                <h4>胜率</h4>
-                <h2>{win_rate:.1f}%</h2>
-                <p>目标: > 60%</p>
-            </div>
-            
-            <div class="metric-card success-card">
-                <h4>成功交易</h4>
-                <h2>{trading_stats["success_trades"]}</h2>
-                <p>共{trading_stats["total_trades"]}笔</p>
-            </div>
-            
-            <div class="metric-card warning-card">
-                <h4>失败交易</h4>
-                <h2>{trading_stats["failed_trades"]}</h2>
-                <p>需要优化</p>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
+        # 桌面4列，移动端通过CSS控制为2列
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f'<div class="metric-card info-card"><h4>今日交易</h4><h2>{trading_stats["daily_trades"]}</h2><p>验证模式</p></div>', unsafe_allow_html=True)
+        with col2:
+            st.markdown(f'<div class="metric-card {card_class}"><h4>胜率</h4><h2>{win_rate:.1f}%</h2><p>目标: > 60%</p></div>', unsafe_allow_html=True)
+        with col3:
+            st.markdown(f'<div class="metric-card success-card"><h4>成功交易</h4><h2>{trading_stats["success_trades"]}</h2><p>共{trading_stats["total_trades"]}笔</p></div>', unsafe_allow_html=True)
+        with col4:
+            st.markdown(f'<div class="metric-card warning-card"><h4>失败交易</h4><h2>{trading_stats["failed_trades"]}</h2><p>需要优化</p></div>', unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -1030,35 +921,22 @@ class RealDashboard:
             st.info("💡 策略进化系统未运行，请在侧边栏启动")
             return
         
-        # 使用 HTML Grid 强制双列布局
+        # 桌面4列，移动端通过CSS控制为2列
         best_fitness = evolution_status['best_fitness']
         fitness_text = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
         avg_fitness = evolution_status['avg_fitness']
         avg_text = f"{avg_fitness:.3f}" if avg_fitness > 0 else "待计算"
         
-        st.markdown(f'''
-        <div class="evolution-grid">
-            <div class="metric-card info-card">
-                <h4>当前代数</h4>
-                <h2>{evolution_status['current_generation']}</h2>
-            </div>
-            
-            <div class="metric-card info-card">
-                <h4>种群大小</h4>
-                <h2>{evolution_status['population_size']}</h2>
-            </div>
-            
-            <div class="metric-card success-card">
-                <h4>最佳评分</h4>
-                <h2>{fitness_text}</h2>
-            </div>
-            
-            <div class="metric-card warning-card">
-                <h4>平均评分</h4>
-                <h2>{avg_text}</h2>
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.markdown(f'<div class="metric-card info-card"><h4>当前代数</h4><h2>{evolution_status["current_generation"]}</h2></div>', unsafe_allow_html=True)
+        with col2:
+            st.markdown(f'<div class="metric-card info-card"><h4>种群大小</h4><h2>{evolution_status["population_size"]}</h2></div>', unsafe_allow_html=True)
+        with col3:
+            st.markdown(f'<div class="metric-card success-card"><h4>最佳评分</h4><h2>{fitness_text}</h2></div>', unsafe_allow_html=True)
+        with col4:
+            st.markdown(f'<div class="metric-card warning-card"><h4>平均评分</h4><h2>{avg_text}</h2></div>', unsafe_allow_html=True)
         
         st.markdown("---")
         

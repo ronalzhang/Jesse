@@ -962,18 +962,8 @@ class RealDashboard:
         
         symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT']
         
-        # 响应式控制栏
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector", label_visibility="collapsed")
-        with col2:
-            if st.button("🔄 刷新", use_container_width=True, key="refresh_exchanges"):
-                # 清除缓存
-                st.session_state.price_cache = {}
-                st.session_state.cache_time = {}
-                st.rerun()
-        
-        auto_refresh = st.checkbox("⚡ 自动刷新 (5秒)", value=False, key="auto_refresh_exchanges")
+        # 币种选择器
+        symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector")
         
         # 获取真实价格数据 - 使用缓存
         exchange_config = self.data_bridge.get_exchange_config()
@@ -1029,12 +1019,6 @@ class RealDashboard:
                     st.success(f"🎯 发现套利机会！价差: {spread:.3f}% (验证模式，不执行交易)")
         else:
             st.warning("⚠️ 无法获取价格数据")
-        
-        # 自动刷新
-        if auto_refresh:
-            import time
-            time.sleep(5)
-            st.rerun()
     
     def render_evolution(self):
         """策略进化 - 真实数据（移动端优化）"""

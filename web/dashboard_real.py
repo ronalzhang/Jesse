@@ -802,23 +802,25 @@ class RealDashboard:
         
         st.markdown("---")
         
-        # 策略进化状态 - 移动端可折叠
-        with st.expander("📈 策略进化状态", expanded=True):
+        # 双列布局显示表格
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 📈 策略进化状态")
             evolution_status = self.data_bridge.get_evolution_status()
             
             if evolution_status['is_running'] and evolution_status['strategies']:
-                # 显示真实的策略数据
                 strategy_df = pd.DataFrame(evolution_status['strategies'][:5])
                 strategy_df['fitness'] = strategy_df['fitness'].apply(lambda x: f"{x:.3f}")
                 strategy_df['return'] = strategy_df['return'].apply(lambda x: f"{x:.2%}")
                 strategy_df['sharpe'] = strategy_df['sharpe'].apply(lambda x: f"{x:.2f}")
                 strategy_df['win_rate'] = strategy_df['win_rate'].apply(lambda x: f"{x:.2%}")
-                st.dataframe(strategy_df, use_container_width=True, height=250)
+                st.dataframe(strategy_df, use_container_width=True, height=250, hide_index=True)
             else:
                 st.info("策略进化系统未运行或暂无数据")
         
-        # 系统状态 - 移动端可折叠
-        with st.expander("🎯 系统状态", expanded=True):
+        with col2:
+            st.markdown("### 🎯 系统状态")
             system_status = self.data_bridge.get_system_status()
             
             status_data = {
@@ -829,7 +831,7 @@ class RealDashboard:
                     '🟢 正常'
                 ]
             }
-            st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True, height=150)
+            st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True, height=250)
     
     def render_exchanges(self):
         """多交易所监控 - 真实数据（移动端优化）"""
@@ -939,19 +941,18 @@ class RealDashboard:
             st.markdown(f'<div class="metric-card warning-card"><h4>平均评分</h4><h2>{avg_text}</h2></div>', unsafe_allow_html=True)
         
         st.markdown("---")
+        st.markdown("### 🏆 最佳策略表现 (Top 10)")
         
-        # 最佳策略表现 - 可展开
-        with st.expander("🏆 最佳策略表现 (Top 10)", expanded=True):
-            if evolution_status['strategies']:
-                df = pd.DataFrame(evolution_status['strategies'][:10])
-                df.columns = ['策略名称', '适应度', '收益率', '夏普比率', '胜率']
-                df['适应度'] = df['适应度'].apply(lambda x: f"{x:.3f}")
-                df['收益率'] = df['收益率'].apply(lambda x: f"{x:.2%}")
-                df['夏普比率'] = df['夏普比率'].apply(lambda x: f"{x:.2f}")
-                df['胜率'] = df['胜率'].apply(lambda x: f"{x:.2%}")
-                st.dataframe(df, use_container_width=True, height=400)
-            else:
-                st.info("暂无策略数据")
+        if evolution_status['strategies']:
+            df = pd.DataFrame(evolution_status['strategies'][:10])
+            df.columns = ['策略名称', '适应度', '收益率', '夏普比率', '胜率']
+            df['适应度'] = df['适应度'].apply(lambda x: f"{x:.3f}")
+            df['收益率'] = df['收益率'].apply(lambda x: f"{x:.2%}")
+            df['夏普比率'] = df['夏普比率'].apply(lambda x: f"{x:.2f}")
+            df['胜率'] = df['胜率'].apply(lambda x: f"{x:.2%}")
+            st.dataframe(df, use_container_width=True, height=450, hide_index=True)
+        else:
+            st.info("暂无策略数据")
     
     def run(self):
         """运行"""

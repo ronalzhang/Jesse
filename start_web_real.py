@@ -20,8 +20,8 @@ def main():
     python_cmd = str(venv_python) if venv_python.exists() else sys.executable
     print(f"✅ Python: {python_cmd}")
     
-    # 检查文件
-    app_file = Path("web/dashboard_real.py")
+    # 检查文件 - 使用优化后的app.py
+    app_file = Path("web/app.py")
     if not app_file.exists():
         print(f"❌ 文件不存在: {app_file}")
         return 1

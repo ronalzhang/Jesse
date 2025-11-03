@@ -265,7 +265,7 @@ st.markdown("""
         overflow: hidden;
     }
     
-    /* 移动端强制双列布局 - 小屏幕设备 */
+    /* 移动端布局优化 - 小屏幕设备 */
     @media (max-width: 768px) {
         .main {
             padding: 0.5rem !important;
@@ -284,7 +284,7 @@ st.markdown("""
             font-size: 0.8rem;
         }
         
-        /* 强制Streamlit columns为2列网格 */
+        /* 强制Streamlit columns为2列网格（仅用于指标卡片） */
         .stHorizontalBlock {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
@@ -293,6 +293,11 @@ st.markdown("""
         
         .stHorizontalBlock > div {
             width: 100% !important;
+        }
+        
+        /* 表格容器在移动端单列显示 */
+        .stHorizontalBlock:has(.dataframe) {
+            grid-template-columns: 1fr !important;
         }
         
         .metric-card {
@@ -310,6 +315,12 @@ st.markdown("""
         .metric-card p {
             font-size: 0.7rem;
         }
+        
+        /* 表格字体优化 */
+        .dataframe {
+            font-size: 0.75rem;
+        }
+    }
         
         /* 横向滚动容器 */
         .horizontal-scroll {

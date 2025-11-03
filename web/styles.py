@@ -1,39 +1,9 @@
 
 import streamlit as st
-import os
-
-def load_flip_counter_assets():
-    """加载翻牌计数器的CSS和JS"""
-    # 读取CSS文件
-    css_path = os.path.join(os.path.dirname(__file__), 'static', 'flip_counter.css')
-    js_path = os.path.join(os.path.dirname(__file__), 'static', 'flip_counter.js')
-    
-    css_content = ""
-    js_content = ""
-    
-    try:
-        if os.path.exists(css_path):
-            with open(css_path, 'r', encoding='utf-8') as f:
-                css_content = f.read()
-    except Exception as e:
-        print(f"无法加载翻牌CSS: {e}")
-    
-    try:
-        if os.path.exists(js_path):
-            with open(js_path, 'r', encoding='utf-8') as f:
-                js_content = f.read()
-    except Exception as e:
-        print(f"无法加载翻牌JS: {e}")
-    
-    return css_content, js_content
 
 def load_css():
-    # 加载翻牌计数器资源
-    flip_css, flip_js = load_flip_counter_assets()
-    
     st.markdown("""
     <style>
-        """ + flip_css + """
         /* 全局样式 - 高级深色主题 */
         .main {
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
@@ -360,7 +330,4 @@ def load_css():
             background: rgba(99, 102, 241, 0.7);
         }
     </style>
-    <script>
-        """ + flip_js + """
-    </script>
     """, unsafe_allow_html=True)

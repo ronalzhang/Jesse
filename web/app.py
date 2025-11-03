@@ -124,68 +124,26 @@ class JessePlusWebInterface:
             subtitle: 副标题
             color: 颜色主题
             details: 详细信息
-            use_flip: 是否使用翻牌效果
+            use_flip: 是否使用翻牌效果（暂时禁用，因为Streamlit限制）
             flip_config: 翻牌配置 {decimals: 小数位, prefix: 前缀, suffix: 后缀}
         """
+        # 暂时禁用翻牌效果，因为Streamlit不支持动态JavaScript
+        # 使用普通的数字显示
         if use_flip and flip_config:
-            # 生成唯一ID
-            import hashlib
-            import time
-            unique_id = hashlib.md5(f"{title}{time.time()}".encode()).hexdigest()[:8]
-            
-            # 提取数字值
-            numeric_value = value
-            if isinstance(value, str):
-                # 尝试从字符串中提取数字
-                import re
-                numbers = re.findall(r'[-+]?\d*\.?\d+', value)
-                if numbers:
-                    numeric_value = float(numbers[0])
-                else:
-                    numeric_value = 0
-            
             decimals = flip_config.get('decimals', 0)
             prefix = flip_config.get('prefix', '')
             suffix = flip_config.get('suffix', '')
-            size = flip_config.get('size', 'large')
             
-            value_html = f'''
-            <div id="flip-{unique_id}" 
-                 data-flip-counter 
-                 data-value="{numeric_value}"
-                 data-decimals="{decimals}"
-                 data-prefix="{prefix}"
-                 data-suffix="{suffix}"
-                 data-theme="{color}"
-                 data-size="{size}"
-                 style="margin: 0.5rem 0;">
-            </div>
-            <script>
-                (function() {{
-                    const element = document.getElementById('flip-{unique_id}');
-                    if (element && window.FlipCounter) {{
-                        const counter = new FlipCounter(element, {{
-                            value: {numeric_value},
-                            decimals: {decimals},
-                            prefix: '{prefix}',
-                            suffix: '{suffix}',
-                            theme: '{color}',
-                            size: '{size}'
-                        }});
-                        element.flipCounter = counter;
-                        
-                        // 模拟数据更新（用于演示）
-                        if ('{title}'.includes('收益') || '{title}'.includes('准确率') || '{title}'.includes('胜率')) {{
-                            setInterval(() => {{
-                                const change = (Math.random() - 0.5) * 2;
-                                const newValue = Math.max(0, counter.getValue() + change);
-                                counter.setValue(newValue);
-                            }}, 5000);
-                        }}
-                    }}
-                }})();
-            </script>
-            '''
+            # 格式化数字
+            if isinstance(value, (int, float)):
+                if decimals > 0:
+                    formatted_value = f"{prefix}{value:.{decimals}f}{suffix}"
+                else:
+                    formatted_value = f"{prefix}{int(value)}{suffix}"
+            else:
+                formatted_value = str(value)
+            
+            value_html = f"<h2>{formatted_value}</h2>"
         else:
             value_html = f"<h2>{value}</h2>" if value else ""
         

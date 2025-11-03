@@ -87,23 +87,43 @@ st.markdown("""
         color: #cbd5e1;
     }
     
-    /* 指标卡片 - 现代设计 */
+    /* 指标卡片 - 液态玻璃效果 */
     .metric-card {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(51, 65, 85, 0.6) 100%);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
         padding: 1.75rem;
-        border-radius: 14px;
-        border-left: 4px solid #667eea;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.125);
         margin-bottom: 1rem;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            rgba(255, 255, 255, 0.05) 50%, 
+            rgba(255, 255, 255, 0.02) 100%);
+        pointer-events: none;
     }
     
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        border-color: rgba(148, 163, 184, 0.25);
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 
+            0 16px 48px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
     }
     
     .metric-card h4 {
@@ -128,25 +148,57 @@ st.markdown("""
         margin: 0.5rem 0 0 0;
     }
     
-    /* 状态颜色 */
+    /* 状态颜色 - 液态玻璃效果 */
     .success-card {
-        border-left-color: #10b981;
-        background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%);
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .success-card h4 {
+        color: #6ee7b7 !important;
+    }
+    
+    .success-card h2 {
+        color: #a7f3d0 !important;
     }
     
     .warning-card {
-        border-left-color: #f59e0b;
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .warning-card h4 {
+        color: #fcd34d !important;
+    }
+    
+    .warning-card h2 {
+        color: #fde68a !important;
     }
     
     .danger-card {
-        border-left-color: #ef4444;
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .danger-card h4 {
+        color: #f87171 !important;
+    }
+    
+    .danger-card h2 {
+        color: #fca5a5 !important;
     }
     
     .info-card {
-        border-left-color: #3b82f6;
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%);
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .info-card h4 {
+        color: #60a5fa !important;
+    }
+    
+    .info-card h2 {
+        color: #93c5fd !important;
     }
     
     /* 验证模式提示 */
@@ -289,48 +341,82 @@ class RealDashboard:
         """页面头部"""
         st.markdown("""
         <div class="main-header">
-            <h1>🚀 Jesse+ 全自动量化交易系统</h1>
+            <h1>◆ 校长全自动量化交易系统</h1>
             <p>多交易所 · 多币种 · 策略自动进化 · AI智能决策</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # 验证模式提示
-        st.markdown("""
-        <div class="verification-mode">
-            ⚠️ <strong>验证模式</strong>: 当前使用真实市场数据进行策略验证，不进行真实资金交易。
-            需要开启实盘交易时请联系管理员。
-        </div>
-        """, unsafe_allow_html=True)
+        # 交易模式提示
+        trading_mode = self.data_bridge.get_trading_mode()
+        if trading_mode == 'paper':
+            st.markdown("""
+            <div class="verification-mode">
+                📝 <strong>模拟盘模式</strong>: 当前使用真实市场数据进行策略验证，不进行真实资金交易。
+                策略表现优秀时可在侧边栏切换到实盘交易。
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="verification-mode" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%); border-left-color: #ef4444;">
+                💰 <strong>实盘交易模式</strong>: 当前使用真实资金进行交易，请密切关注风险！
+                如需调整策略可在侧边栏切换回模拟盘。
+            </div>
+            """, unsafe_allow_html=True)
         
         # 获取真实系统状态
         system_status = self.data_bridge.get_system_status()
         trading_stats = self.data_bridge.get_trading_stats()
         evolution_status = self.data_bridge.get_evolution_status()
+        exchange_config = self.data_bridge.get_exchange_config()
         
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        # 重新设计的状态栏 - 更清晰的布局
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             status_icon = "🟢" if system_status['system_running'] else "🔴"
             status_text = "运行中" if system_status['system_running'] else "已停止"
-            st.metric("系统状态", f"{status_icon} {status_text}")
+            st.markdown(f'''
+            <div class="metric-card {"success-card" if system_status["system_running"] else "danger-card"}">
+                <h4>系统状态</h4>
+                <h2>{status_icon} {status_text}</h2>
+                <p>{len(exchange_config["active_exchanges"])}个交易所 · 4个币种</p>
+            </div>
+            ''', unsafe_allow_html=True)
         
         with col2:
-            exchange_config = self.data_bridge.get_exchange_config()
-            st.metric("活跃交易所", len(exchange_config['active_exchanges']))
+            st.markdown(f'''
+            <div class="metric-card info-card">
+                <h4>今日交易统计</h4>
+                <h2>{trading_stats["daily_trades"]} 笔</h2>
+                <p>成功 {trading_stats["success_trades"]} · 失败 {trading_stats["failed_trades"]}</p>
+            </div>
+            ''', unsafe_allow_html=True)
         
         with col3:
-            st.metric("监控币种", "4")  # BTC, ETH, SOL, BNB
+            win_rate = trading_stats['win_rate'] * 100
+            card_class = "success-card" if win_rate >= 60 else "warning-card" if win_rate >= 50 else "danger-card"
+            st.markdown(f'''
+            <div class="metric-card {card_class}">
+                <h4>整体胜率</h4>
+                <h2>{win_rate:.1f}%</h2>
+                <p>基于 {trading_stats["total_trades"]} 笔历史交易</p>
+            </div>
+            ''', unsafe_allow_html=True)
         
         with col4:
-            st.metric("今日交易", trading_stats['daily_trades'])
-        
-        with col5:
-            win_rate = trading_stats['win_rate'] * 100
-            st.metric("胜率", f"{win_rate:.1f}%")
-        
-        with col6:
-            evo_icon = "✅" if evolution_status['is_running'] else "❌"
-            st.metric("策略进化", f"{evo_icon} 第{evolution_status['current_generation']}代")
+            evo_icon = "🟢" if evolution_status['is_running'] else "🔴"
+            evo_status = "运行中" if evolution_status['is_running'] else "已停止"
+            best_fitness = evolution_status.get('best_fitness', 0)
+            # 适应度说明：综合评分指标，包含收益率、夏普比率、胜率等多维度评估
+            # 如果为0说明：1) 进化系统未运行 2) 还没有回测数据 3) 回测结果文件中没有fitness字段
+            fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+            st.markdown(f'''
+            <div class="metric-card {"success-card" if evolution_status["is_running"] else "warning-card"}">
+                <h4>策略进化</h4>
+                <h2>{evo_icon} {evo_status}</h2>
+                <p>第{evolution_status["current_generation"]}代 · 最佳评分 {fitness_display}</p>
+            </div>
+            ''', unsafe_allow_html=True)
     
     def render_sidebar(self):
         """侧边栏 - 真实控制"""
@@ -364,7 +450,9 @@ class RealDashboard:
             st.sidebar.info("🔄 策略进化运行中")
             evolution_status = self.data_bridge.get_evolution_status()
             st.sidebar.metric("当前代数", evolution_status['current_generation'])
-            st.sidebar.metric("最佳适应度", f"{evolution_status['best_fitness']:.3f}")
+            best_fitness = evolution_status['best_fitness']
+            fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+            st.sidebar.metric("最佳策略评分", fitness_display)
             
             if st.sidebar.button("🔴 停止进化", use_container_width=True, key="stop_evolution"):
                 result = self.data_bridge.control_system('stop', 'evolution')
@@ -403,8 +491,49 @@ class RealDashboard:
             st.sidebar.metric("运行时间", f"{uptime_hours:.1f}小时")
         
         st.sidebar.markdown("---")
-        st.sidebar.markdown("### ⚠️ 安全提示")
-        st.sidebar.info("当前为验证模式，不使用真实资金交易")
+        
+        # 交易模式切换
+        st.sidebar.markdown("### 🔄 交易模式")
+        
+        # 获取当前交易模式（从配置文件或状态中读取）
+        trading_mode = self.data_bridge.get_trading_mode()
+        
+        if trading_mode == 'paper':
+            st.sidebar.info("📝 当前: 模拟盘交易")
+            st.sidebar.markdown("""
+            **模拟盘特点:**
+            - ✅ 使用真实市场数据
+            - ✅ 策略可以持续进化
+            - ⚠️ 不使用真实资金
+            - 📊 验证策略有效性
+            """)
+            
+            if st.sidebar.button("🚀 切换到实盘交易", use_container_width=True, key="switch_to_live", type="primary"):
+                st.sidebar.warning("⚠️ 切换到实盘将使用真实资金进行交易！")
+                if st.sidebar.button("✅ 确认切换到实盘", use_container_width=True, key="confirm_live"):
+                    result = self.data_bridge.switch_trading_mode('live')
+                    if result['success']:
+                        st.sidebar.success("✅ 已切换到实盘交易模式")
+                        st.rerun()
+                    else:
+                        st.sidebar.error(f"❌ 切换失败: {result['message']}")
+        else:
+            st.sidebar.warning("💰 当前: 实盘交易")
+            st.sidebar.markdown("""
+            **实盘特点:**
+            - 💰 使用真实资金交易
+            - 📈 真实盈亏
+            - 🧬 策略持续进化
+            - ⚡ 实时执行订单
+            """)
+            
+            if st.sidebar.button("📝 切换到模拟盘", use_container_width=True, key="switch_to_paper"):
+                result = self.data_bridge.switch_trading_mode('paper')
+                if result['success']:
+                    st.sidebar.success("✅ 已切换到模拟盘模式")
+                    st.rerun()
+                else:
+                    st.sidebar.error(f"❌ 切换失败: {result['message']}")
     
     def render_overview(self):
         """系统概览 - 真实数据"""
@@ -459,12 +588,7 @@ class RealDashboard:
         st.subheader("💱 多交易所实时监控")
         
         symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT']
-        symbol = st.selectbox("选择币种", symbols, index=0)
-        
-        col1, col2 = st.columns([3, 1])
-        with col2:
-            if st.button("🔄 刷新", use_container_width=True):
-                st.rerun()
+        symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector")
         
         # 获取真实价格数据
         exchange_config = self.data_bridge.get_exchange_config()
@@ -533,9 +657,14 @@ class RealDashboard:
         with col2:
             st.metric("种群大小", evolution_status['population_size'])
         with col3:
-            st.metric("最佳适应度", f"{evolution_status['best_fitness']:.3f}")
+            # 适应度 = 综合评分，基于收益率、夏普比率、胜率等指标计算
+            best_fitness = evolution_status['best_fitness']
+            fitness_text = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+            st.metric("最佳策略评分", fitness_text)
         with col4:
-            st.metric("平均适应度", f"{evolution_status['avg_fitness']:.3f}")
+            avg_fitness = evolution_status['avg_fitness']
+            avg_text = f"{avg_fitness:.3f}" if avg_fitness > 0 else "待计算"
+            st.metric("平均策略评分", avg_text)
         
         st.markdown("### 🏆 最佳策略表现")
         if evolution_status['strategies']:

@@ -188,6 +188,51 @@ class DataBridge:
         
         return {'success': False, 'message': '未知操作'}
     
+    def get_trading_mode(self) -> str:
+        """获取当前交易模式"""
+        try:
+            config_file = self.project_root / "trading_config.json"
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    data = json.load(f)
+                    return data.get('trading_mode', 'paper')
+        except:
+            pass
+        return 'paper'  # 默认模拟盘
+    
+    def switch_trading_mode(self, mode: str) -> Dict:
+        """切换交易模式"""
+        try:
+            config_file = self.project_root / "trading_config.json"
+            
+            # 读取现有配置
+            config = {}
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    config = json.load(f)
+            
+            # 更新模式
+            old_mode = config.get('trading_mode', 'paper')
+            config['trading_mode'] = mode
+            config['mode_switched_at'] = datetime.now().isoformat()
+            
+            # 保存配置
+            with open(config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            # 如果交易系统正在运行，需要重启以应用新模式
+            system_status = self.get_system_status()
+            if system_status['trading_active']:
+                self.control_system('restart', 'trading')
+            
+            mode_name = '实盘交易' if mode == 'live' else '模拟盘交易'
+            return {
+                'success': True, 
+                'message': f'已从{old_mode}切换到{mode_name}模式'
+            }
+        except Exception as e:
+            return {'success': False, 'message': f'切换失败: {e}'}
+    
     def get_exchange_config(self) -> Dict:
         """获取交易所配置"""
         try:
@@ -196,12 +241,25 @@ class DataBridge:
                 with open(api_keys_file, 'r') as f:
                     data = json.load(f)
                     exchanges = list(data.get('exchanges', {}).keys())
+                    # 检查每个交易所的API配置是否完整
+                    active_exchanges = []
+                    for ex in exchanges:
+                        ex_config = data['exchanges'][ex]
+                        # 检查必要字段
+                        if ex_config.get('api_key') and ex_config.get('secret_key'):
+                            # OKX需要额外检查passphrase
+                            if ex == 'okx':
+                                if ex_config.get('passphrase'):
+                                    active_exchanges.append(ex)
+                            else:
+                                active_exchanges.append(ex)
+                    
                     return {
                         'exchanges': exchanges,
-                        'active_exchanges': [ex for ex in exchanges if ex in ['binance', 'bitget']]
+                        'active_exchanges': active_exchanges
                     }
-        except:
-            pass
+        except Exception as e:
+            print(f"读取交易所配置失败: {e}")
         
         return {
             'exchanges': ['binance', 'okx', 'bitget'],

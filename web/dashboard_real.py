@@ -20,12 +20,17 @@ sys.path.insert(0, str(project_root))
 
 from web.data_bridge import DataBridge
 
-# 页面配置
+# 页面配置 - 性能优化
 st.set_page_config(
     page_title="Jesse+ 全自动量化交易系统",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
 
 # CSS样式 - 优化版
@@ -326,16 +331,55 @@ class RealDashboard:
     def __init__(self):
         self.data_bridge = data_bridge
         self.exchanges = {}
+        self.cache_duration = 10  # 缓存10秒
         self.init_exchanges()
+        self.init_cache()
+    
+    def init_cache(self):
+        """初始化缓存"""
+        if 'price_cache' not in st.session_state:
+            st.session_state.price_cache = {}
+        if 'cache_time' not in st.session_state:
+            st.session_state.cache_time = {}
     
     def init_exchanges(self):
-        """初始化交易所"""
+        """初始化交易所 - 优化超时设置"""
         for name in ['binance', 'bitget']:
             try:
                 cls = getattr(ccxt, name)
-                self.exchanges[name] = cls({'enableRateLimit': True, 'timeout': 30000})
-            except:
-                pass
+                self.exchanges[name] = cls({
+                    'enableRateLimit': True, 
+                    'timeout': 5000,  # 减少超时时间到5秒
+                    'options': {'defaultType': 'spot'}
+                })
+            except Exception as e:
+                st.warning(f"交易所 {name} 初始化失败: {e}")
+    
+    def get_cached_price(self, exchange, symbol):
+        """获取缓存价格数据"""
+        import time
+        cache_key = f"{exchange}_{symbol}"
+        now = time.time()
+        
+        # 检查缓存是否有效
+        if cache_key in st.session_state.price_cache:
+            cache_age = now - st.session_state.cache_time.get(cache_key, 0)
+            if cache_age < self.cache_duration:
+                return st.session_state.price_cache[cache_key]
+        
+        # 获取新数据
+        try:
+            if exchange in self.exchanges:
+                ticker = self.exchanges[exchange].fetch_ticker(symbol)
+                st.session_state.price_cache[cache_key] = ticker
+                st.session_state.cache_time[cache_key] = now
+                return ticker
+        except Exception as e:
+            # 返回缓存数据（即使过期）
+            if cache_key in st.session_state.price_cache:
+                return st.session_state.price_cache[cache_key]
+        
+        return None
     
     def render_header(self):
         """页面头部"""
@@ -584,39 +628,54 @@ class RealDashboard:
             st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True)
     
     def render_exchanges(self):
-        """多交易所监控 - 真实数据"""
+        """多交易所监控 - 真实数据（优化版）"""
         st.subheader("💱 多交易所实时监控")
         
         symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT']
-        symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector")
         
-        # 获取真实价格数据
+        col1, col2, col3 = st.columns([3, 1, 1])
+        with col1:
+            symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector")
+        with col2:
+            auto_refresh = st.checkbox("自动刷新", value=False, key="auto_refresh_exchanges")
+        with col3:
+            if st.button("🔄 刷新", use_container_width=True, key="refresh_exchanges"):
+                # 清除缓存
+                st.session_state.price_cache = {}
+                st.session_state.cache_time = {}
+                st.rerun()
+        
+        # 获取真实价格数据 - 使用缓存
         exchange_config = self.data_bridge.get_exchange_config()
         price_data = []
         
-        for ex_name in exchange_config['active_exchanges']:
-            try:
-                if ex_name in self.exchanges:
-                    ticker = self.exchanges[ex_name].fetch_ticker(symbol)
+        with st.spinner('加载价格数据...'):
+            for ex_name in exchange_config['active_exchanges']:
+                ticker = self.get_cached_price(ex_name, symbol)
+                
+                if ticker:
+                    try:
+                        price_data.append({
+                            '交易所': ex_name.upper(),
+                            '最新价': f"${ticker['last']:.2f}",
+                            '买价': f"${ticker.get('bid', 0):.2f}",
+                            '卖价': f"${ticker.get('ask', 0):.2f}",
+                            '24h涨跌': f"{ticker.get('percentage', 0):.2f}%",
+                            '成交量': f"{ticker.get('baseVolume', 0):,.0f}",
+                            '状态': '🟢'
+                        })
+                    except Exception as e:
+                        pass
+                else:
                     price_data.append({
                         '交易所': ex_name.upper(),
-                        '最新价': f"${ticker['last']:.2f}",
-                        '买价': f"${ticker['bid']:.2f}",
-                        '卖价': f"${ticker['ask']:.2f}",
-                        '24h涨跌': f"{ticker.get('percentage', 0):.2f}%",
-                        '成交量': f"{ticker.get('baseVolume', 0):,.0f}",
-                        '状态': '🟢 正常'
+                        '最新价': 'N/A',
+                        '买价': 'N/A',
+                        '卖价': 'N/A',
+                        '24h涨跌': 'N/A',
+                        '成交量': 'N/A',
+                        '状态': '🔴'
                     })
-            except Exception as e:
-                price_data.append({
-                    '交易所': ex_name.upper(),
-                    '最新价': 'N/A',
-                    '买价': 'N/A',
-                    '卖价': 'N/A',
-                    '24h涨跌': 'N/A',
-                    '成交量': 'N/A',
-                    '状态': f'🔴 {str(e)[:20]}'
-                })
         
         if price_data:
             st.dataframe(pd.DataFrame(price_data), use_container_width=True, height=200)
@@ -640,6 +699,12 @@ class RealDashboard:
                     st.success(f"🎯 发现套利机会！价差: {spread:.3f}% (验证模式，不执行交易)")
         else:
             st.warning("⚠️ 无法获取价格数据")
+        
+        # 自动刷新
+        if auto_refresh:
+            import time
+            time.sleep(5)
+            st.rerun()
     
     def render_evolution(self):
         """策略进化 - 真实数据"""

@@ -123,6 +123,8 @@ Thumbs.db
 # 日志文件
 logs/
 *.log
+*.md
+*.mdc
 
 # 数据文件
 data/reviews/

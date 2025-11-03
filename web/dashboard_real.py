@@ -265,36 +265,298 @@ st.markdown("""
         overflow: hidden;
     }
     
-    /* 响应式设计 */
-    @media (max-width: 768px) {
+    /* 现代化移动端设计 - 针对大屏手机优化 */
+    @media (max-width: 1024px) {
+        /* 平板和大屏手机 */
+        .main {
+            padding: 0.5rem !important;
+        }
+        
+        .main-header {
+            padding: 1.5rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 12px;
+        }
+        
         .main-header h1 {
-            font-size: 1.875rem;
+            font-size: 1.75rem;
+            line-height: 1.2;
         }
+        
         .main-header p {
-            font-size: 0.95rem;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
         }
+        
+        /* 移动端卡片网格 - 2列布局 */
+        .mobile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
         .metric-card {
-            padding: 1.25rem;
+            padding: 1rem;
+            border-radius: 12px;
+            min-height: 100px;
         }
+        
+        .metric-card h4 {
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        
         .metric-card h2 {
             font-size: 1.5rem;
+            margin: 0.25rem 0;
+        }
+        
+        .metric-card p {
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        /* 横向滚动容器 */
+        .horizontal-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .horizontal-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .horizontal-scroll-item {
+            flex: 0 0 85%;
+            scroll-snap-align: start;
+        }
+        
+        /* 移动端按钮优化 */
+        .stButton > button {
+            padding: 0.875rem 1.25rem;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            width: 100%;
+            touch-action: manipulation;
+        }
+        
+        /* Tab优化 */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 4px;
+            padding: 0.25rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        
+        /* 数据表格优化 */
+        .dataframe {
+            font-size: 0.8rem;
+        }
+        
+        /* 折叠面板 */
+        .collapsible-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .collapsible-header {
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .collapsible-content {
+            padding: 0 1rem 1rem 1rem;
         }
     }
     
-    @media (max-width: 480px) {
-        .main-header {
-            padding: 1.5rem;
-        }
+    @media (max-width: 768px) {
+        /* 中等手机屏幕 */
         .main-header h1 {
             font-size: 1.5rem;
         }
+        
+        .main-header p {
+            font-size: 0.8rem;
+        }
+        
+        .metric-card h2 {
+            font-size: 1.35rem;
+        }
+        
+        /* 紧凑模式 */
+        .verification-mode {
+            padding: 0.875rem;
+            font-size: 0.85rem;
+            border-radius: 10px;
+        }
+    }
+    
+    @media (max-width: 430px) {
+        /* 小屏手机 - 单列布局 */
+        .mobile-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .main-header {
+            padding: 1.25rem 0.875rem;
+        }
+        
+        .main-header h1 {
+            font-size: 1.35rem;
+        }
+        
         .metric-card {
-            padding: 1rem;
+            padding: 0.875rem;
         }
+        
+        .metric-card h2 {
+            font-size: 1.25rem;
+        }
+        
+        .horizontal-scroll-item {
+            flex: 0 0 90%;
+        }
+    }
+    
+    /* 触摸设备优化 */
+    @media (hover: none) and (pointer: coarse) {
+        /* 增大可点击区域 */
         .stButton > button {
-            padding: 0.625rem 1.25rem;
-            font-size: 0.875rem;
+            min-height: 48px;
         }
+        
+        .collapsible-header {
+            min-height: 52px;
+        }
+        
+        /* 禁用悬停效果 */
+        .metric-card:hover {
+            transform: none;
+        }
+        
+        /* 点击反馈 */
+        .metric-card:active {
+            transform: scale(0.98);
+            transition: transform 0.1s;
+        }
+        
+        .stButton > button:active {
+            transform: scale(0.97);
+        }
+        
+        /* 选择框优化 */
+        .stSelectbox > div > div {
+            min-height: 48px;
+        }
+        
+        /* Tab 点击区域 */
+        .stTabs [data-baseweb="tab"] {
+            min-height: 44px;
+        }
+    }
+    
+    /* 横屏模式优化 - 充分利用宽屏 */
+    @media (max-width: 1024px) and (orientation: landscape) {
+        .main-header {
+            padding: 1rem 1.5rem;
+        }
+        
+        .main-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .main-header p {
+            display: inline-block;
+            margin-left: 1rem;
+        }
+        
+        /* 横屏时使用4列布局 */
+        .mobile-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .metric-card {
+            padding: 0.875rem;
+        }
+        
+        .metric-card h2 {
+            font-size: 1.25rem;
+        }
+    }
+    
+    /* 超大屏手机优化 (iPhone 17 Pro Max 等) */
+    @media (min-width: 430px) and (max-width: 768px) {
+        .main-header h1 {
+            font-size: 1.875rem;
+        }
+        
+        .metric-card {
+            padding: 1.25rem;
+        }
+        
+        .metric-card h2 {
+            font-size: 1.65rem;
+        }
+        
+        /* 充分利用大屏空间 */
+        .horizontal-scroll-item {
+            flex: 0 0 48%;
+        }
+    }
+    
+    /* 下拉刷新提示 */
+    .refresh-indicator {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        transform: translateY(-100%);
+        transition: transform 0.3s;
+        z-index: 1000;
+    }
+    
+    /* 加载骨架屏 */
+    .skeleton {
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0.05) 25%, 
+            rgba(255, 255, 255, 0.1) 50%, 
+            rgba(255, 255, 255, 0.05) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s ease-in-out infinite;
+        border-radius: 8px;
+    }
+    
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
     }
     
     /* 滚动条美化 */
@@ -334,6 +596,13 @@ class RealDashboard:
         self.cache_duration = 10  # 缓存10秒
         self.init_exchanges()
         self.init_cache()
+        self.is_mobile = self.detect_mobile()
+    
+    def detect_mobile(self):
+        """检测是否为移动设备"""
+        # 通过 Streamlit 的 session state 检测屏幕宽度
+        # 这是一个简化版本，实际可以通过 JavaScript 获取更准确的信息
+        return False  # 默认为桌面，CSS 会自动适配
     
     def init_cache(self):
         """初始化缓存"""
@@ -413,12 +682,20 @@ class RealDashboard:
         evolution_status = self.data_bridge.get_evolution_status()
         exchange_config = self.data_bridge.get_exchange_config()
         
-        # 重新设计的状态栏 - 更清晰的布局
-        col1, col2, col3, col4 = st.columns(4)
+        # 状态栏 - 响应式布局（桌面4列，移动端2列）
+        status_icon = "🟢" if system_status['system_running'] else "🔴"
+        status_text = "运行中" if system_status['system_running'] else "已停止"
+        win_rate = trading_stats['win_rate'] * 100
+        card_class = "success-card" if win_rate >= 60 else "warning-card" if win_rate >= 50 else "danger-card"
+        evo_icon = "🟢" if evolution_status['is_running'] else "🔴"
+        evo_status = "运行中" if evolution_status['is_running'] else "已停止"
+        best_fitness = evolution_status.get('best_fitness', 0)
+        fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
+        
+        # 使用 Streamlit 的响应式列布局
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         
         with col1:
-            status_icon = "🟢" if system_status['system_running'] else "🔴"
-            status_text = "运行中" if system_status['system_running'] else "已停止"
             st.markdown(f'''
             <div class="metric-card {"success-card" if system_status["system_running"] else "danger-card"}">
                 <h4>系统状态</h4>
@@ -430,35 +707,27 @@ class RealDashboard:
         with col2:
             st.markdown(f'''
             <div class="metric-card info-card">
-                <h4>今日交易统计</h4>
+                <h4>今日交易</h4>
                 <h2>{trading_stats["daily_trades"]} 笔</h2>
                 <p>成功 {trading_stats["success_trades"]} · 失败 {trading_stats["failed_trades"]}</p>
             </div>
             ''', unsafe_allow_html=True)
         
         with col3:
-            win_rate = trading_stats['win_rate'] * 100
-            card_class = "success-card" if win_rate >= 60 else "warning-card" if win_rate >= 50 else "danger-card"
             st.markdown(f'''
             <div class="metric-card {card_class}">
                 <h4>整体胜率</h4>
                 <h2>{win_rate:.1f}%</h2>
-                <p>基于 {trading_stats["total_trades"]} 笔历史交易</p>
+                <p>共 {trading_stats["total_trades"]} 笔</p>
             </div>
             ''', unsafe_allow_html=True)
         
         with col4:
-            evo_icon = "🟢" if evolution_status['is_running'] else "🔴"
-            evo_status = "运行中" if evolution_status['is_running'] else "已停止"
-            best_fitness = evolution_status.get('best_fitness', 0)
-            # 适应度说明：综合评分指标，包含收益率、夏普比率、胜率等多维度评估
-            # 如果为0说明：1) 进化系统未运行 2) 还没有回测数据 3) 回测结果文件中没有fitness字段
-            fitness_display = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
             st.markdown(f'''
             <div class="metric-card {"success-card" if evolution_status["is_running"] else "warning-card"}">
                 <h4>策略进化</h4>
                 <h2>{evo_icon} {evo_status}</h2>
-                <p>第{evolution_status["current_generation"]}代 · 最佳评分 {fitness_display}</p>
+                <p>第{evolution_status["current_generation"]}代 · {fitness_display}</p>
             </div>
             ''', unsafe_allow_html=True)
     
@@ -580,26 +849,30 @@ class RealDashboard:
                     st.sidebar.error(f"❌ 切换失败: {result['message']}")
     
     def render_overview(self):
-        """系统概览 - 真实数据"""
+        """系统概览 - 真实数据（响应式优化）"""
         st.subheader("📊 系统概览")
         
         trading_stats = self.data_bridge.get_trading_stats()
+        win_rate = trading_stats['win_rate'] * 100
+        card_class = "success-card" if win_rate >= 60 else "warning-card"
         
-        col1, col2, col3, col4 = st.columns(4)
+        # 响应式卡片布局 - 桌面4列，平板2列，手机2列
+        col1, col2 = st.columns(2)
         with col1:
             st.markdown(f'<div class="metric-card info-card"><h4>今日交易</h4><h2>{trading_stats["daily_trades"]}</h2><p>验证模式</p></div>', unsafe_allow_html=True)
         with col2:
-            win_rate = trading_stats['win_rate'] * 100
-            card_class = "success-card" if win_rate >= 60 else "warning-card"
             st.markdown(f'<div class="metric-card {card_class}"><h4>胜率</h4><h2>{win_rate:.1f}%</h2><p>目标: > 60%</p></div>', unsafe_allow_html=True)
+        
+        col3, col4 = st.columns(2)
         with col3:
             st.markdown(f'<div class="metric-card success-card"><h4>成功交易</h4><h2>{trading_stats["success_trades"]}</h2><p>共{trading_stats["total_trades"]}笔</p></div>', unsafe_allow_html=True)
         with col4:
             st.markdown(f'<div class="metric-card warning-card"><h4>失败交易</h4><h2>{trading_stats["failed_trades"]}</h2><p>需要优化</p></div>', unsafe_allow_html=True)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### 📈 策略进化状态")
+        st.markdown("---")
+        
+        # 策略进化状态 - 移动端可折叠
+        with st.expander("📈 策略进化状态", expanded=True):
             evolution_status = self.data_bridge.get_evolution_status()
             
             if evolution_status['is_running'] and evolution_status['strategies']:
@@ -609,12 +882,12 @@ class RealDashboard:
                 strategy_df['return'] = strategy_df['return'].apply(lambda x: f"{x:.2%}")
                 strategy_df['sharpe'] = strategy_df['sharpe'].apply(lambda x: f"{x:.2f}")
                 strategy_df['win_rate'] = strategy_df['win_rate'].apply(lambda x: f"{x:.2%}")
-                st.dataframe(strategy_df, use_container_width=True)
+                st.dataframe(strategy_df, use_container_width=True, height=250)
             else:
                 st.info("策略进化系统未运行或暂无数据")
         
-        with col2:
-            st.markdown("### 🎯 系统状态")
+        # 系统状态 - 移动端可折叠
+        with st.expander("🎯 系统状态", expanded=True):
             system_status = self.data_bridge.get_system_status()
             
             status_data = {
@@ -625,25 +898,26 @@ class RealDashboard:
                     '🟢 正常'
                 ]
             }
-            st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True, height=150)
     
     def render_exchanges(self):
-        """多交易所监控 - 真实数据（优化版）"""
+        """多交易所监控 - 真实数据（移动端优化）"""
         st.subheader("💱 多交易所实时监控")
         
         symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT']
         
-        col1, col2, col3 = st.columns([3, 1, 1])
+        # 响应式控制栏
+        col1, col2 = st.columns([2, 1])
         with col1:
-            symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector")
+            symbol = st.selectbox("选择币种", symbols, index=0, key="exchange_symbol_selector", label_visibility="collapsed")
         with col2:
-            auto_refresh = st.checkbox("自动刷新", value=False, key="auto_refresh_exchanges")
-        with col3:
             if st.button("🔄 刷新", use_container_width=True, key="refresh_exchanges"):
                 # 清除缓存
                 st.session_state.price_cache = {}
                 st.session_state.cache_time = {}
                 st.rerun()
+        
+        auto_refresh = st.checkbox("⚡ 自动刷新 (5秒)", value=False, key="auto_refresh_exchanges")
         
         # 获取真实价格数据 - 使用缓存
         exchange_config = self.data_bridge.get_exchange_config()
@@ -707,7 +981,7 @@ class RealDashboard:
             st.rerun()
     
     def render_evolution(self):
-        """策略进化 - 真实数据"""
+        """策略进化 - 真实数据（移动端优化）"""
         st.subheader("🧬 策略自动进化系统")
         
         evolution_status = self.data_bridge.get_evolution_status()
@@ -716,32 +990,38 @@ class RealDashboard:
             st.info("💡 策略进化系统未运行，请在侧边栏启动")
             return
         
-        col1, col2, col3, col4 = st.columns(4)
+        # 响应式指标卡片 - 2x2 网格
+        col1, col2 = st.columns(2)
         with col1:
             st.metric("当前代数", evolution_status['current_generation'])
         with col2:
             st.metric("种群大小", evolution_status['population_size'])
+        
+        col3, col4 = st.columns(2)
         with col3:
             # 适应度 = 综合评分，基于收益率、夏普比率、胜率等指标计算
             best_fitness = evolution_status['best_fitness']
             fitness_text = f"{best_fitness:.3f}" if best_fitness > 0 else "待计算"
-            st.metric("最佳策略评分", fitness_text)
+            st.metric("最佳评分", fitness_text)
         with col4:
             avg_fitness = evolution_status['avg_fitness']
             avg_text = f"{avg_fitness:.3f}" if avg_fitness > 0 else "待计算"
-            st.metric("平均策略评分", avg_text)
+            st.metric("平均评分", avg_text)
         
-        st.markdown("### 🏆 最佳策略表现")
-        if evolution_status['strategies']:
-            df = pd.DataFrame(evolution_status['strategies'][:10])
-            df.columns = ['策略名称', '适应度', '收益率', '夏普比率', '胜率']
-            df['适应度'] = df['适应度'].apply(lambda x: f"{x:.3f}")
-            df['收益率'] = df['收益率'].apply(lambda x: f"{x:.2%}")
-            df['夏普比率'] = df['夏普比率'].apply(lambda x: f"{x:.2f}")
-            df['胜率'] = df['胜率'].apply(lambda x: f"{x:.2%}")
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("暂无策略数据")
+        st.markdown("---")
+        
+        # 最佳策略表现 - 可展开
+        with st.expander("🏆 最佳策略表现 (Top 10)", expanded=True):
+            if evolution_status['strategies']:
+                df = pd.DataFrame(evolution_status['strategies'][:10])
+                df.columns = ['策略名称', '适应度', '收益率', '夏普比率', '胜率']
+                df['适应度'] = df['适应度'].apply(lambda x: f"{x:.3f}")
+                df['收益率'] = df['收益率'].apply(lambda x: f"{x:.2%}")
+                df['夏普比率'] = df['夏普比率'].apply(lambda x: f"{x:.2f}")
+                df['胜率'] = df['胜率'].apply(lambda x: f"{x:.2%}")
+                st.dataframe(df, use_container_width=True, height=400)
+            else:
+                st.info("暂无策略数据")
     
     def run(self):
         """运行"""

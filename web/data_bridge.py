@@ -21,9 +21,80 @@ class DataBridge:
         self.logs_dir = self.project_root / "logs"
     
     def get_evolution_status(self) -> Dict:
-        """获取策略进化状态"""
+        """获取策略进化状态 - 从进化系统状态文件读取真实数据"""
         try:
-            # 读取最新的回测结果
+            # 优先从进化系统状态文件读取
+            evolution_state_file = self.data_dir / "evolution" / "evolution_state.json"
+            if evolution_state_file.exists():
+                with open(evolution_state_file, 'r') as f:
+                    state_data = json.load(f)
+                    
+                    # 获取真实的代数和适应度
+                    current_generation = state_data.get('current_generation', 0)
+                    best_fitness = state_data.get('best_fitness', 0)
+                    avg_fitness = state_data.get('avg_fitness', 0)
+                    
+                    # 读取最新的回测结果用于策略列表
+                    strategies = []
+                    if self.backtest_dir.exists():
+                        backtest_files = list(self.backtest_dir.glob("*.json"))
+                        latest_files = sorted(backtest_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]
+                        
+                        for file in latest_files:
+                            try:
+                                with open(file, 'r') as bf:
+                                    data = json.load(bf)
+                                    # 计算fitness（如果没有的话）
+                                    fitness = data.get('fitness', 0)
+                                    if fitness == 0:
+                                        # 根据多个指标计算fitness
+                                        total_return = data.get('total_return', 0)
+                                        sharpe = data.get('sharpe_ratio', 0)
+                                        win_rate = data.get('win_rate', 0)
+                                        max_dd = data.get('max_drawdown', 1)
+                                        
+                                        # 综合评分公式（与进化系统一致）
+                                        fitness = (
+                                            0.35 * max(0, total_return) +  # 收益率权重35%
+                                            0.25 * max(0, sharpe / 3) +     # 夏普比率权重25%（归一化）
+                                            0.25 * win_rate +               # 胜率权重25%
+                                            0.15 * (1 - min(1, max_dd))     # 回撤权重15%
+                                        )
+                                    
+                                    strategies.append({
+                                        'name': file.stem,
+                                        'fitness': fitness,
+                                        'return': data.get('total_return', 0),
+                                        'sharpe': data.get('sharpe_ratio', 0),
+                                        'win_rate': data.get('win_rate', 0)
+                                    })
+                            except:
+                                continue
+                    
+                    # 按fitness排序
+                    strategies.sort(key=lambda x: x['fitness'], reverse=True)
+                    
+                    return {
+                        'current_generation': current_generation,
+                        'best_fitness': best_fitness,
+                        'avg_fitness': avg_fitness,
+                        'population_size': len(strategies),
+                        'strategies': strategies,
+                        'is_running': True
+                    }
+            
+            # 如果状态文件不存在，回退到旧逻辑
+            return self._fallback_evolution_status()
+            
+        except Exception as e:
+            print(f"获取进化状态失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._get_default_evolution_status()
+    
+    def _fallback_evolution_status(self) -> Dict:
+        """回退方案：从回测文件推断状态"""
+        try:
             if not self.backtest_dir.exists():
                 return self._get_default_evolution_status()
             
@@ -31,7 +102,6 @@ class DataBridge:
             if not backtest_files:
                 return self._get_default_evolution_status()
             
-            # 按修改时间排序，获取最新的文件
             latest_files = sorted(backtest_files, key=lambda x: x.stat().st_mtime, reverse=True)[:10]
             
             strategies = []
@@ -40,9 +110,22 @@ class DataBridge:
                 try:
                     with open(file, 'r') as f:
                         data = json.load(f)
-                        fitness = data.get('fitness', 0)
+                        # 计算fitness
+                        total_return = data.get('total_return', 0)
+                        sharpe = data.get('sharpe_ratio', 0)
+                        win_rate = data.get('win_rate', 0)
+                        max_dd = data.get('max_drawdown', 1)
+                        
+                        fitness = (
+                            0.35 * max(0, total_return) +
+                            0.25 * max(0, sharpe / 3) +
+                            0.25 * win_rate +
+                            0.15 * (1 - min(1, max_dd))
+                        )
+                        
                         if fitness > best_fitness:
                             best_fitness = fitness
+                        
                         strategies.append({
                             'name': file.stem,
                             'fitness': fitness,
@@ -53,16 +136,17 @@ class DataBridge:
                 except:
                     continue
             
+            strategies.sort(key=lambda x: x['fitness'], reverse=True)
+            
             return {
-                'current_generation': len(backtest_files),
+                'current_generation': len(backtest_files),  # 回退方案：用文件数
                 'best_fitness': best_fitness,
                 'avg_fitness': sum(s['fitness'] for s in strategies) / len(strategies) if strategies else 0,
                 'population_size': len(strategies),
                 'strategies': strategies,
                 'is_running': True
             }
-        except Exception as e:
-            print(f"获取进化状态失败: {e}")
+        except:
             return self._get_default_evolution_status()
     
     def _get_default_evolution_status(self) -> Dict:

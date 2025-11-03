@@ -295,12 +295,6 @@ st.markdown("""
             width: 100% !important;
         }
         
-        /* 3列状态指示器在移动端保持3列 */
-        .stHorizontalBlock:has(> div:nth-child(3):last-child) {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.5rem !important;
-        }
-        
         .metric-card {
             padding: 0.875rem;
         }
@@ -320,6 +314,24 @@ st.markdown("""
         /* 表格字体优化 */
         .dataframe {
             font-size: 0.75rem;
+        }
+        
+        /* 状态指示器移动端优化 */
+        .status-indicators {
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .status-item {
+            padding: 0.4rem 0.875rem;
+        }
+        
+        .status-dot {
+            font-size: 0.75rem;
+        }
+        
+        .status-label {
+            font-size: 0.8rem;
         }
     }
         
@@ -516,6 +528,45 @@ st.markdown("""
     @keyframes skeleton-loading {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
+    }
+    
+    /* 精致的状态指示器 */
+    .status-indicators {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 3rem;
+        padding: 1rem 0;
+        margin: 1rem 0;
+    }
+    
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .status-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+    }
+    
+    .status-dot {
+        font-size: 0.875rem;
+        line-height: 1;
+    }
+    
+    .status-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #cbd5e1;
+        white-space: nowrap;
     }
     
     /* 滚动条美化 */
@@ -830,24 +881,28 @@ class RealDashboard:
         
         st.markdown("---")
         
-        # 系统状态 - 三个状态指示卡片
-        st.markdown("### 🎯 系统状态")
+        # 系统状态 - 精致的状态指示器
         system_status = self.data_bridge.get_system_status()
         
-        col1, col2, col3 = st.columns(3)
+        trading_icon = "🟢" if system_status['trading_active'] else "🔴"
+        evolution_icon = "🟢" if system_status['evolution_active'] else "🔴"
         
-        with col1:
-            trading_status = "🟢 运行中" if system_status['trading_active'] else "🔴 已停止"
-            trading_class = "success-card" if system_status['trading_active'] else "danger-card"
-            st.markdown(f'<div class="metric-card {trading_class}"><h4>交易系统</h4><h2>{trading_status}</h2></div>', unsafe_allow_html=True)
-        
-        with col2:
-            evolution_status_text = "🟢 运行中" if system_status['evolution_active'] else "🔴 已停止"
-            evolution_class = "success-card" if system_status['evolution_active'] else "danger-card"
-            st.markdown(f'<div class="metric-card {evolution_class}"><h4>策略进化</h4><h2>{evolution_status_text}</h2></div>', unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown('<div class="metric-card success-card"><h4>数据采集</h4><h2>🟢 正常</h2></div>', unsafe_allow_html=True)
+        st.markdown(f'''
+        <div class="status-indicators">
+            <div class="status-item">
+                <span class="status-dot">{trading_icon}</span>
+                <span class="status-label">交易系统</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot">{evolution_icon}</span>
+                <span class="status-label">策略进化</span>
+            </div>
+            <div class="status-item">
+                <span class="status-dot">🟢</span>
+                <span class="status-label">数据采集</span>
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
     
     def render_exchanges(self):
         """多交易所监控 - 真实数据（移动端优化）"""

@@ -31,9 +31,9 @@ def load_css():
     # 加载翻牌计数器资源
     flip_css, flip_js = load_flip_counter_assets()
     
-    st.markdown(f"""
+    st.markdown("""
     <style>
-        {flip_css}
+        """ + flip_css + """
         /* 全局样式 - 高级深色主题 */
         .main {
             background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
@@ -111,10 +111,10 @@ def load_css():
             animation: gradient 3s ease infinite;
         }
         
-        @keyframes gradient {{
-            0%, 100% {{ background-position: 0% 50%; }}
-            50% {{ background-position: 100% 50%; }}
-        }}
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
         
         .main-header h1 {
             margin: 0;
@@ -361,6 +361,6 @@ def load_css():
         }
     </style>
     <script>
-        {flip_js}
+        """ + flip_js + """
     </script>
     """, unsafe_allow_html=True)

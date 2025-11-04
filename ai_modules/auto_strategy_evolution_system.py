@@ -297,31 +297,39 @@ class AutoStrategyEvolutionSystem:
                 # 记录日志
                 self.logger.info(f"📊 进化状态更新 - 代数: {self.evolution_state['current_generation']}, 最佳适应度: {self.evolution_state['best_fitness']:.3f}")
                 
-                # 等待下一次检查
-                time.sleep(600)  # 每小时检查一次
+                # 等待下一次检查 - 每10分钟检查一次
+                time.sleep(600)  # 600秒 = 10分钟
                 
             except Exception as e:
                 self.logger.error(f"❌ 进化循环错误: {e}")
                 time.sleep(300)  # 错误后等待5分钟
     
     def _should_evolve(self) -> bool:
-        """检查是否需要进化
-        # 检查交易数量
-        recent_trades = self._count_recent_trades()
-        if recent_trades < 50:
-            self.logger.debug(f"交易数量不足: {recent_trades}/50")
-            return False"""
-        # 检查时间间隔
+        """检查是否需要进化"""
+        # 检查是否是新系统（没有进化历史）
+        if self.evolution_state['current_generation'] == 0:
+            self.logger.info("🚀 新系统初始化，开始首次进化")
+            return True
+        
+        # 检查时间间隔（改为分钟级别）
         if self.evolution_state['last_evolution_date']:
             try:
                 last_evolution = datetime.fromisoformat(self.evolution_state['last_evolution_date'])
-                days_since_evolution = (datetime.now() - last_evolution).days
+                minutes_since_evolution = (datetime.now() - last_evolution).total_seconds() / 60
                 
-                if days_since_evolution < self.config.evolution_trigger_days:
-                    self.logger.debug(f"⏳ 距离上次进化仅 {days_since_evolution} 天，未达到触发条件")
+                # evolution_trigger_days = 0.125 天 = 3小时 = 180分钟
+                # 但我们希望10分钟进化一次，所以直接设置为10分钟
+                trigger_minutes = 10  # 10分钟进化一次
+                
+                if minutes_since_evolution < trigger_minutes:
+                    self.logger.debug(f"⏳ 距离上次进化仅 {minutes_since_evolution:.1f} 分钟，未达到 {trigger_minutes} 分钟触发条件")
                     return False
+                else:
+                    self.logger.info(f"⏰ 距离上次进化已 {minutes_since_evolution:.1f} 分钟，达到 {trigger_minutes} 分钟触发条件，开始进化")
+                    return True
             except Exception as e:
                 self.logger.warning(f"⚠️ 解析上次进化时间失败: {e}")
+                return True  # 解析失败时触发进化
         
         # 检查性能阈值
         if self.evolution_state['best_fitness'] < self.config.min_performance_threshold:
@@ -331,11 +339,6 @@ class AutoStrategyEvolutionSystem:
         # 检查最大回撤
         if self.evolution_state['performance_metrics'].get('max_drawdown', 0) > self.config.max_drawdown_threshold:
             self.logger.info(f"⚠️ 最大回撤 {self.evolution_state['performance_metrics']['max_drawdown']:.3f} 超过阈值 {self.config.max_drawdown_threshold}，触发进化")
-            return True
-        
-        # 检查是否是新系统（没有进化历史）
-        if self.evolution_state['current_generation'] == 0:
-            self.logger.info("🚀 新系统初始化，开始首次进化")
             return True
         
         self.logger.debug("✅ 系统运行正常，无需进化")

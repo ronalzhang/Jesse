@@ -1072,14 +1072,26 @@ class RealDashboard:
         else:
             st.info("暂无策略数据")
     
+    def render_arbitrage(self):
+        """智能套利扫描 - 自动化套利机会发现"""
+        from web.arbitrage_dashboard import ArbitrageDashboard
+        
+        try:
+            arb_dashboard = ArbitrageDashboard()
+            arb_dashboard.render_main()
+        except Exception as e:
+            st.error(f"❌ 套利扫描器加载失败: {e}")
+            st.info("💡 请确保已安装所有依赖")
+    
     def run(self):
         """运行"""
         self.render_header()
         self.render_sidebar()
         
-        tab1, tab2, tab3 = st.tabs([
+        tab1, tab2, tab3, tab4 = st.tabs([
             "📊 系统概览",
             "💱 多交易所监控",
+            "🔍 智能套利扫描",
             "🧬 策略进化"
         ])
         
@@ -1088,6 +1100,8 @@ class RealDashboard:
         with tab2:
             self.render_exchanges()
         with tab3:
+            self.render_arbitrage()
+        with tab4:
             self.render_evolution()
 
 
